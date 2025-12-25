@@ -1309,7 +1309,7 @@
           <div class="filters">
             <div class="filter-group">
               <label class="filter-label">Driver</label>
-              <select class="filter-select" id="filterDriver">
+              <select class="filter-select" id="filterDriver" onchange="applyTicketFilters()">
                 <option value="">All Drivers</option>
                 <option value="Bridger Booth">Bridger Booth</option>
                 <option value="Tristan Booth">Tristan Booth</option>
@@ -1319,15 +1319,15 @@
             </div>
             <div class="filter-group">
               <label class="filter-label">Start Date</label>
-              <input type="date" class="filter-input" id="filterStartDate">
+              <input type="date" class="filter-input" id="filterStartDate" onchange="applyTicketFilters()">
             </div>
             <div class="filter-group">
               <label class="filter-label">End Date</label>
-              <input type="date" class="filter-input" id="filterEndDate">
+              <input type="date" class="filter-input" id="filterEndDate" onchange="applyTicketFilters()">
             </div>
             <div class="filter-group">
               <label class="filter-label">Truck</label>
-              <select class="filter-select" id="filterTruck">
+              <select class="filter-select" id="filterTruck" onchange="applyTicketFilters()">
                 <option value="">All Trucks</option>
                 <option value="Truck 1">Truck 1</option>
                 <option value="Truck 2">Truck 2</option>
@@ -1341,8 +1341,8 @@
           <div class="table-header">
             <h2 class="table-title">Ticket Records</h2>
             <div class="table-actions">
-              <button class="btn btn-secondary">Export CSV</button>
-              <button class="btn btn-secondary">Export Excel</button>
+              <button class="btn btn-secondary" onclick="exportTicketsCSV()">Export CSV</button>
+              <button class="btn btn-secondary" onclick="exportTicketsExcel()">Export Excel</button>
             </div>
           </div>
 
@@ -1811,10 +1811,26 @@
         // Populate drivers table
         populateDriversTable();
 
+        // Populate tickets table
+        populateTicketsTable();
+
+        // Populate driver filter dropdown
+        populateDriverFilter();
+
       } catch (err) {
         console.error('Error loading data:', err);
         throw err;
       }
+    }
+
+    // Populate driver filter dropdown
+    function populateDriverFilter() {
+      const filterDriver = document.getElementById('filterDriver');
+      if (!filterDriver) return;
+
+      // Keep the "All Drivers" option and add real drivers
+      const driverOptions = allDrivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+      filterDriver.innerHTML = '<option value="">All Drivers</option>' + driverOptions;
     }
 
     // Update dashboard statistics
@@ -1850,6 +1866,119 @@
       
       const avgRevenue = allTickets.length > 0 ? (500) : 0;
       document.getElementById('avgRevenue').textContent = '$' + avgRevenue;
+    }
+
+    // Populate tickets table with filters
+    function populateTicketsTable(filteredTickets = null) {
+      const tickets = filteredTickets || allTickets;
+      const tbody = document.getElementById('allTicketsTable');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+
+      if (tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found</td></tr>';
+        return;
+      }
+
+      tickets.forEach(ticket => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td>${new Date(ticket.ticket_date).toLocaleDateString()}</td>
+          <td>${ticket.driver_name}</td>
+          <td>${ticket.truck_number}</td>
+          <td>${ticket.ticket_number}</td>
+          <td>${ticket.gross_weight.toLocaleString()}</td>
+          <td>${ticket.tare_weight.toLocaleString()}</td>
+          <td>${ticket.net_tons.toFixed(2)}</td>
+          <td>${ticket.third_load ? '<span class="badge success">Yes</span>' : '-'}</td>
+          <td>$${(ticket.driver_pay + ticket.bonus_pay).toFixed(2)}</td>
+          <td>
+            ${ticket.photo_url && ticket.photo_url !== 'pending' 
+              ? `<a href="${ticket.photo_url}" target="_blank" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">View</a>` 
+              : '<span style="color: var(--text-muted); font-size: 11px;">Pending</span>'}
+          </td>
+        `;
+      });
+    }
+
+    // Apply ticket filters
+    function applyTicketFilters() {
+      const filterDriver = document.getElementById('filterDriver').value;
+      const filterStartDate = document.getElementById('filterStartDate').value;
+      const filterEndDate = document.getElementById('filterEndDate').value;
+      const filterTruck = document.getElementById('filterTruck').value;
+
+      let filtered = [...allTickets];
+
+      // Filter by driver
+      if (filterDriver) {
+        filtered = filtered.filter(t => t.driver_name === filterDriver);
+      }
+
+      // Filter by start date
+      if (filterStartDate) {
+        filtered = filtered.filter(t => {
+          const ticketDate = new Date(t.ticket_date);
+          const startDate = new Date(filterStartDate);
+          return ticketDate >= startDate;
+        });
+      }
+
+      // Filter by end date
+      if (filterEndDate) {
+        filtered = filtered.filter(t => {
+          const ticketDate = new Date(t.ticket_date);
+          const endDate = new Date(filterEndDate);
+          return ticketDate <= endDate;
+        });
+      }
+
+      // Filter by truck
+      if (filterTruck) {
+        filtered = filtered.filter(t => t.truck_number === filterTruck);
+      }
+
+      populateTicketsTable(filtered);
+    }
+
+    // Export tickets to CSV
+    function exportTicketsCSV() {
+      if (allTickets.length === 0) {
+        alert('No tickets to export');
+        return;
+      }
+
+      const headers = ['Date', 'Driver', 'Truck', 'Ticket #', 'Gross Weight', 'Tare Weight', 'Net Tons', '3rd Load', 'Pay'];
+      const rows = allTickets.map(t => [
+        new Date(t.ticket_date).toLocaleDateString(),
+        t.driver_name,
+        t.truck_number,
+        t.ticket_number,
+        t.gross_weight,
+        t.tare_weight,
+        t.net_tons,
+        t.third_load ? 'Yes' : 'No',
+        (t.driver_pay + t.bonus_pay).toFixed(2)
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `b5-tickets-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    // Export tickets to Excel (simplified CSV that Excel can open)
+    function exportTicketsExcel() {
+      exportTicketsCSV(); // For now, same as CSV - Excel opens CSV files fine
     }
 
     // Populate drivers table
