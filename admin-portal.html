@@ -1768,6 +1768,10 @@
           setTimeout(() => {
             if (typeof initializeRevenueChart === 'function') {
               initializeRevenueChart();
+              // Update with real data
+              if (typeof updateRevenueChart === 'function') {
+                updateRevenueChart();
+              }
             }
           }, 100);
 
@@ -1826,11 +1830,19 @@
     // Populate driver filter dropdown
     function populateDriverFilter() {
       const filterDriver = document.getElementById('filterDriver');
-      if (!filterDriver) return;
-
-      // Keep the "All Drivers" option and add real drivers
+      const chartFilterDriver = document.getElementById('chartFilterDriver');
+      
       const driverOptions = allDrivers.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
-      filterDriver.innerHTML = '<option value="">All Drivers</option>' + driverOptions;
+      
+      // Populate tickets filter
+      if (filterDriver) {
+        filterDriver.innerHTML = '<option value="">All Drivers</option>' + driverOptions;
+      }
+      
+      // Populate chart filter
+      if (chartFilterDriver) {
+        chartFilterDriver.innerHTML = '<option value="all">All Drivers</option>' + driverOptions;
+      }
     }
 
     // Update dashboard statistics
@@ -2408,12 +2420,12 @@
     function initializeRevenueChart(chartType = 'line') {
       const ctx = document.getElementById('revenueChart').getContext('2d');
       
-      // Sample data - replace with real data from Supabase
-      const monthlyData = {
+      // Start with empty data - will be populated by updateRevenueChart
+      const initialData = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         datasets: [{
           label: 'Revenue',
-          data: [42000, 38500, 45000, 41200, 47800, 43500, 49200, 46700, 48500, 50200, 47300, 48500],
+          data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
           borderColor: '#dc2626',
           backgroundColor: chartType === 'bar' ? 'rgba(220, 38, 38, 0.8)' : 'rgba(220, 38, 38, 0.1)',
           tension: 0.4,
@@ -2429,7 +2441,7 @@
 
       revenueChart = new Chart(ctx, {
         type: chartType,
-        data: monthlyData,
+        data: initialData,
         options: {
           responsive: true,
           maintainAspectRatio: true,
@@ -2500,60 +2512,97 @@
 
     function updateRevenueChart() {
       const driver = document.getElementById('chartFilterDriver').value;
-      const year = document.getElementById('chartFilterYear').value;
+      const year = parseInt(document.getElementById('chartFilterYear').value);
       const view = document.getElementById('chartFilterView').value;
       const month = document.getElementById('chartFilterMonth').value;
 
-      // TODO: Fetch data from Supabase based on filters
-      console.log('Updating chart with filters:', { driver, year, view, month });
+      // Filter tickets by driver and year
+      let filteredTickets = allTickets.filter(t => {
+        const ticketDate = new Date(t.ticket_date);
+        const ticketYear = ticketDate.getFullYear();
+        
+        // Filter by year
+        if (ticketYear !== year) return false;
+        
+        // Filter by driver if selected
+        if (driver !== 'all' && t.driver_name !== driver) return false;
+        
+        return true;
+      });
 
-      // Sample data based on view type
       let labels, data, chartType = 'line';
       
       if (view === 'monthly') {
         if (month !== 'all') {
           // Show daily data for specific month
+          const selectedMonth = parseInt(month);
+          const daysInMonth = new Date(year, selectedMonth, 0).getDate();
+          labels = Array.from({length: daysInMonth}, (_, i) => (i + 1).toString());
+          
+          // Calculate revenue per day
+          data = new Array(daysInMonth).fill(0);
+          filteredTickets.forEach(t => {
+            const ticketDate = new Date(t.ticket_date);
+            if (ticketDate.getMonth() + 1 === selectedMonth) {
+              const day = ticketDate.getDate() - 1; // 0-indexed
+              // Scale to client rate ($500 per ticket)
+              data[day] += 500;
+            }
+          });
+
           const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
                             'July', 'August', 'September', 'October', 'November', 'December'];
-          const daysInMonth = new Date(year, parseInt(month), 0).getDate();
-          labels = Array.from({length: daysInMonth}, (_, i) => (i + 1).toString());
-          data = Array.from({length: daysInMonth}, () => Math.floor(Math.random() * 2500) + 1000);
-          revenueChart.options.plugins.title = {
-            display: true,
-            text: monthNames[month] + ' ' + year + ' - Daily Revenue',
-            color: '#111827',
-            font: { size: 16, weight: '600' }
-          };
+          revenueChart.options.plugins.title.text = monthNames[selectedMonth] + ' ' + year + ' - Daily Revenue';
         } else {
           // Show monthly data for full year
           labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          data = [42000, 38500, 45000, 41200, 47800, 43500, 49200, 46700, 48500, 50200, 47300, 48500];
-          revenueChart.options.plugins.title = {
-            display: true,
-            text: year + ' - Monthly Revenue',
-            color: '#111827',
-            font: { size: 16, weight: '600' }
-          };
+          data = new Array(12).fill(0);
+          
+          filteredTickets.forEach(t => {
+            const ticketDate = new Date(t.ticket_date);
+            const monthIndex = ticketDate.getMonth();
+            // Scale to client rate ($500 per ticket)
+            data[monthIndex] += 500;
+          });
+
+          revenueChart.options.plugins.title.text = year + ' - Monthly Revenue';
         }
       } else if (view === 'weekly') {
-        labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
-        data = [11200, 12500, 10800, 13400, 11900, 12700, 13100, 12000];
-        revenueChart.options.plugins.title = {
-          display: true,
-          text: 'Last 8 Weeks - Revenue',
-          color: '#111827',
-          font: { size: 16, weight: '600' }
-        };
+        // Last 8 weeks
+        labels = [];
+        data = new Array(8).fill(0);
+        const now = new Date();
+        
+        for (let i = 7; i >= 0; i--) {
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - (i * 7));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          labels.push(`Week ${8 - i}`);
+          
+          filteredTickets.forEach(t => {
+            const ticketDate = new Date(t.ticket_date);
+            if (ticketDate >= weekStart && ticketDate <= weekEnd) {
+              data[7 - i] += 500; // Scale to client rate
+            }
+          });
+        }
+        
+        revenueChart.options.plugins.title.text = 'Last 8 Weeks - Revenue';
       } else if (view === 'quarter') {
         labels = ['Q1', 'Q2', 'Q3', 'Q4'];
-        data = [125500, 132500, 144400, 145900];
+        data = [0, 0, 0, 0];
         chartType = 'bar';
-        revenueChart.options.plugins.title = {
-          display: true,
-          text: year + ' - Quarterly Revenue',
-          color: '#111827',
-          font: { size: 16, weight: '600' }
-        };
+        
+        filteredTickets.forEach(t => {
+          const ticketDate = new Date(t.ticket_date);
+          const monthIndex = ticketDate.getMonth();
+          const quarter = Math.floor(monthIndex / 3);
+          data[quarter] += 500; // Scale to client rate
+        });
+
+        revenueChart.options.plugins.title.text = year + ' - Quarterly Revenue';
       }
 
       // Update chart type if needed
@@ -2579,12 +2628,12 @@
       
       revenueChart.update();
 
-      // Update summary stats
+      // Update summary stats with real data
       const total = data.reduce((a, b) => a + b, 0);
-      const tickets = Math.floor(total / 500);
+      const tickets = filteredTickets.length;
       document.getElementById('chartTotalRevenue').textContent = '$' + total.toLocaleString();
       document.getElementById('chartTotalTickets').textContent = tickets;
-      document.getElementById('chartAvgPerTicket').textContent = '$' + Math.round(total / tickets);
+      document.getElementById('chartAvgPerTicket').textContent = tickets > 0 ? '$' + Math.round(total / tickets) : '$0';
     }
 
     function handleViewChange() {
