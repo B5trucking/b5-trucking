@@ -1822,6 +1822,9 @@
         // Populate driver filter dropdown
         populateDriverFilter();
 
+        // Load invoices list
+        loadInvoicesList();
+
       } catch (err) {
         console.error('Error loading data:', err);
         throw err;
@@ -2356,64 +2359,189 @@
         return;
       }
 
-      // TODO: Fetch tickets from Supabase for date range
-      // For now, show preview with sample data
-      
-      document.getElementById('invoicePreviewArea').style.display = 'block';
-      document.getElementById('invoicePeriod').textContent = 
-        new Date(startDate).toLocaleDateString() + ' – ' + new Date(endDate).toLocaleDateString();
-      
-      // Sample invoice data
-      const sampleTickets = [
-        { ticketNumber: '12345', date: '12/20/2025', truckNumber: 'Truck 1', netTons: 18.5 },
-        { ticketNumber: '12346', date: '12/21/2025', truckNumber: 'Truck 2', netTons: 19.2 },
-        { ticketNumber: '12347', date: '12/22/2025', truckNumber: 'Truck 3', netTons: 17.8 },
-      ];
-
-      const tbody = document.getElementById('invoiceTicketsBody');
-      tbody.innerHTML = '';
-
-      sampleTickets.forEach(ticket => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-          <td><input type="text" value="${ticket.ticketNumber}"></td>
-          <td><input type="text" value="${ticket.date}"></td>
-          <td><input type="text" value="${ticket.truckNumber}"></td>
-          <td style="text-align: center;">1</td>
-          <td style="text-align: right;"><input type="number" value="${ticket.netTons}" step="0.01"></td>
-          <td style="text-align: right;">$500.00</td>
-        `;
-      });
-
-      const subtotal = sampleTickets.length * 500;
-      document.getElementById('invoiceSubtotal').textContent = '$' + subtotal.toFixed(2);
-
-      // Calculate fuel surcharge
+      // Get fuel rates
       const fuelBase = parseFloat(document.getElementById('fuelBase').value) || 0;
       const fuelRate = parseFloat(document.getElementById('fuelRate').value) || 0;
 
-      if (fuelRate > fuelBase) {
-        const surchargePerLoad = (84 * 2 / 7) * (fuelRate - fuelBase);
-        const totalSurcharge = surchargePerLoad * sampleTickets.length;
+      if (!fuelBase || !fuelRate) {
+        alert('Please enter fuel base and current fuel rate');
+        return;
+      }
 
-        document.getElementById('fuelSurchargeSection').style.display = 'block';
-        document.getElementById('fuelSurchargeTotal').textContent = '$' + totalSurcharge.toFixed(2);
-        document.getElementById('fuelSurchargeCalc').innerHTML = `
-          Base: $${fuelBase.toFixed(2)} · Current: $${fuelRate.toFixed(2)}<br>
-          84 miles × 2 / 7 mpg × $${(fuelRate - fuelBase).toFixed(2)} × ${sampleTickets.length} loads<br>
-          $${surchargePerLoad.toFixed(2)} per load
-        `;
+      // Fetch tickets from Supabase for date range
+      supabaseClient
+        .from('tickets')
+        .select('*')
+        .gte('ticket_date', startDate)
+        .lte('ticket_date', endDate)
+        .order('ticket_date', { ascending: true })
+        .then(({ data: tickets, error }) => {
+          if (error) {
+            console.error('Error fetching tickets:', error);
+            alert('Error loading tickets: ' + error.message);
+            return;
+          }
 
-        document.getElementById('invoiceGrandTotal').textContent = '$' + (subtotal + totalSurcharge).toFixed(2);
-      } else {
-        document.getElementById('fuelSurchargeSection').style.display = 'none';
-        document.getElementById('invoiceGrandTotal').textContent = '$' + subtotal.toFixed(2);
+          if (!tickets || tickets.length === 0) {
+            alert('No tickets found for this date range');
+            return;
+          }
+
+          // Show preview
+          document.getElementById('invoicePreviewArea').style.display = 'block';
+          document.getElementById('invoicePeriod').textContent = 
+            new Date(startDate).toLocaleDateString() + ' – ' + new Date(endDate).toLocaleDateString();
+          
+          // Generate invoice number
+          const invoiceNumber = 'INV-' + new Date().toISOString().slice(0,10).replace(/-/g, '') + '-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+          document.getElementById('invoiceNumber').textContent = invoiceNumber;
+          document.getElementById('invoiceDate').textContent = new Date().toLocaleDateString();
+
+          // Populate table with real tickets
+          const tbody = document.getElementById('invoiceTicketsBody');
+          tbody.innerHTML = '';
+
+          tickets.forEach(ticket => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+              <td><input type="text" value="${ticket.ticket_number}"></td>
+              <td><input type="text" value="${new Date(ticket.ticket_date).toLocaleDateString()}"></td>
+              <td><input type="text" value="${ticket.truck_number}"></td>
+              <td style="text-align: center;">1</td>
+              <td style="text-align: right;"><input type="number" value="${ticket.net_tons.toFixed(2)}" step="0.01"></td>
+              <td style="text-align: right;">$500.00</td>
+            `;
+          });
+
+          // Calculate totals
+          const subtotal = tickets.length * 500;
+          document.getElementById('invoiceSubtotal').textContent = '$' + subtotal.toFixed(2);
+
+          // Calculate fuel surcharge
+          if (fuelRate > fuelBase) {
+            const surchargePerLoad = (84 * 2 / 7) * (fuelRate - fuelBase);
+            const totalSurcharge = surchargePerLoad * tickets.length;
+
+            document.getElementById('fuelSurchargeSection').style.display = 'block';
+            document.getElementById('fuelSurchargeTotal').textContent = '$' + totalSurcharge.toFixed(2);
+            document.getElementById('fuelSurchargeCalc').innerHTML = `
+              Base: $${fuelBase.toFixed(2)} · Current: $${fuelRate.toFixed(2)}<br>
+              84 miles × 2 / 7 mpg × $${(fuelRate - fuelBase).toFixed(2)} × ${tickets.length} loads<br>
+              $${surchargePerLoad.toFixed(2)} per load
+            `;
+
+            document.getElementById('invoiceGrandTotal').textContent = '$' + (subtotal + totalSurcharge).toFixed(2);
+            
+            // Store for saving
+            window.currentInvoiceData = {
+              invoiceNumber,
+              startDate,
+              endDate,
+              subtotal,
+              fuelSurcharge: totalSurcharge,
+              total: subtotal + totalSurcharge,
+              ticketCount: tickets.length
+            };
+          } else {
+            document.getElementById('fuelSurchargeSection').style.display = 'none';
+            document.getElementById('invoiceGrandTotal').textContent = '$' + subtotal.toFixed(2);
+            
+            // Store for saving
+            window.currentInvoiceData = {
+              invoiceNumber,
+              startDate,
+              endDate,
+              subtotal,
+              fuelSurcharge: 0,
+              total: subtotal,
+              ticketCount: tickets.length
+            };
+          }
+        });
+    }
+
+    async function saveInvoice() {
+      if (!window.currentInvoiceData) {
+        alert('Please generate invoice preview first');
+        return;
+      }
+
+      try {
+        const { invoiceNumber, startDate, endDate, total, fuelSurcharge, ticketCount } = window.currentInvoiceData;
+
+        // Save invoice to database
+        const { data, error } = await supabaseClient
+          .from('invoices')
+          .insert({
+            invoice_number: invoiceNumber,
+            date_range_start: startDate,
+            date_range_end: endDate,
+            total_amount: total,
+            fuel_surcharge: fuelSurcharge,
+            ticket_count: ticketCount,
+            pdf_url: null // PDF generation coming later
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        alert('Invoice saved successfully! PDF generation coming soon.');
+
+        // Clear form and preview
+        document.getElementById('invoiceStartDate').value = '';
+        document.getElementById('invoiceEndDate').value = '';
+        document.getElementById('fuelBase').value = '';
+        document.getElementById('fuelRate').value = '';
+        document.getElementById('invoicePreviewArea').style.display = 'none';
+        window.currentInvoiceData = null;
+
+        // Reload invoices list
+        loadInvoicesList();
+
+      } catch (err) {
+        console.error('Error saving invoice:', err);
+        alert('Error saving invoice: ' + err.message);
       }
     }
 
-    function saveInvoice() {
-      alert('Invoice saved! (This will save to Supabase and generate PDF)');
-      // TODO: Save to Supabase and generate PDF
+    // Load invoices list
+    async function loadInvoicesList() {
+      try {
+        const { data: invoices, error } = await supabaseClient
+          .from('invoices')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const tbody = document.getElementById('previousInvoicesTable');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        if (!invoices || invoices.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">No invoices created yet</td></tr>';
+          return;
+        }
+
+        invoices.forEach(invoice => {
+          const row = tbody.insertRow();
+          row.innerHTML = `
+            <td>${invoice.invoice_number}</td>
+            <td>${new Date(invoice.created_at).toLocaleDateString()}</td>
+            <td>${new Date(invoice.date_range_start).toLocaleDateString()} – ${new Date(invoice.date_range_end).toLocaleDateString()}</td>
+            <td>${invoice.ticket_count}</td>
+            <td>$${invoice.total_amount.toFixed(2)}</td>
+            <td>
+              <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="alert('PDF generation coming soon!')">View PDF</button>
+            </td>
+          `;
+        });
+
+      } catch (err) {
+        console.error('Error loading invoices:', err);
+      }
     }
 
     function logout() {
