@@ -1905,8 +1905,13 @@
 
       tickets.forEach(ticket => {
         const row = tbody.insertRow();
+        
+        // Fix timezone issue
+        const ticketDate = ticket.ticket_date;
+        const displayDate = new Date(ticketDate + 'T00:00:00').toLocaleDateString();
+        
         row.innerHTML = `
-          <td>${new Date(ticket.ticket_date).toLocaleDateString()}</td>
+          <td>${displayDate}</td>
           <td>${ticket.driver_name}</td>
           <td>${ticket.truck_number}</td>
           <td>${ticket.ticket_number}</td>
@@ -2454,10 +2459,13 @@
           tbody.innerHTML = '';
 
           tickets.forEach(ticket => {
+            const ticketDate = ticket.ticket_date;
+            const displayDate = new Date(ticketDate + 'T00:00:00').toLocaleDateString();
+            
             const row = tbody.insertRow();
             row.innerHTML = `
               <td><input type="text" value="${ticket.ticket_number}"></td>
-              <td><input type="text" value="${new Date(ticket.ticket_date).toLocaleDateString()}"></td>
+              <td><input type="text" value="${displayDate}"></td>
               <td><input type="text" value="${ticket.truck_number}"></td>
               <td style="text-align: center;">1</td>
               <td style="text-align: right;"><input type="number" value="${ticket.net_tons.toFixed(2)}" step="0.01"></td>
