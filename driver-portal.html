@@ -1355,9 +1355,14 @@
 
       weeklyTickets.forEach((ticket, index) => {
         const row = tbody.insertRow();
+        
+        // Fix timezone issue - use the actual date from the database without conversion
+        const ticketDate = ticket.ticket_date; // Already in YYYY-MM-DD format
+        const displayDate = new Date(ticketDate + 'T00:00:00').toLocaleDateString();
+        
         row.innerHTML = `
           <td>${index + 1}</td>
-          <td>${new Date(ticket.ticket_date).toLocaleDateString()}</td>
+          <td>${displayDate}</td>
           <td>${ticket.ticket_number}</td>
           <td>${ticket.net_tons.toFixed(2)} tons</td>
           <td>${ticket.third_load ? '<span class="badge bonus">+$10</span>' : '-'}</td>
@@ -1460,8 +1465,13 @@
 
       tickets.forEach(ticket => {
         const row = tbody.insertRow();
+        
+        // Fix timezone issue
+        const ticketDate = ticket.ticket_date;
+        const displayDate = new Date(ticketDate + 'T00:00:00').toLocaleDateString();
+        
         row.innerHTML = `
-          <td style="padding: 16px;">${new Date(ticket.ticket_date).toLocaleDateString()}</td>
+          <td style="padding: 16px;">${displayDate}</td>
           <td style="padding: 16px;">${ticket.ticket_number}</td>
           <td style="padding: 16px;">${ticket.truck_number}</td>
           <td style="padding: 16px;">${ticket.gross_weight.toLocaleString()}</td>
