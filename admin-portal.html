@@ -884,6 +884,62 @@
       font-size: 14px;
     }
 
+    /* PRINT STYLES */
+    @media print {
+      /* Hide everything except invoice preview */
+      .sidebar,
+      .top-bar,
+      .page-header,
+      .section:not(#invoicesSection) {
+        display: none !important;
+      }
+
+      /* Hide non-invoice content */
+      .form-card:not(:has(#invoicePreviewArea)) {
+        display: none !important;
+      }
+
+      /* Hide all buttons */
+      button,
+      .btn {
+        display: none !important;
+      }
+
+      /* Make invoice full width */
+      .main-content {
+        margin-left: 0 !important;
+      }
+
+      .content-area {
+        padding: 0 !important;
+      }
+
+      /* Show only invoice preview */
+      #invoicePreviewArea {
+        display: block !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 20px !important;
+      }
+
+      /* Better print formatting */
+      .invoice-preview {
+        page-break-after: always;
+      }
+
+      table {
+        page-break-inside: avoid;
+      }
+
+      /* Make inputs look like text when printing */
+      input {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        font-family: inherit !important;
+      }
+    }
+
     /* RESPONSIVE */
     @media (max-width: 768px) {
       .mobile-menu-btn {
@@ -2539,25 +2595,30 @@
             total_amount: total,
             fuel_surcharge: fuelSurcharge,
             ticket_count: ticketCount,
-            pdf_url: null // PDF generation coming later
+            pdf_url: 'generated-on-demand' // PDF generated via print
           })
           .select()
           .single();
 
         if (error) throw error;
 
-        alert('Invoice saved successfully! PDF generation coming soon.');
+        alert('Invoice saved successfully! Click OK to generate PDF.');
 
-        // Clear form and preview
-        document.getElementById('invoiceStartDate').value = '';
-        document.getElementById('invoiceEndDate').value = '';
-        document.getElementById('fuelBase').value = '';
-        document.getElementById('fuelRate').value = '';
-        document.getElementById('invoicePreviewArea').style.display = 'none';
-        window.currentInvoiceData = null;
+        // Trigger print dialog for PDF generation
+        window.print();
 
-        // Reload invoices list
-        loadInvoicesList();
+        // Clear form and preview after print dialog closes
+        setTimeout(() => {
+          document.getElementById('invoiceStartDate').value = '';
+          document.getElementById('invoiceEndDate').value = '';
+          document.getElementById('fuelBase').value = '';
+          document.getElementById('fuelRate').value = '';
+          document.getElementById('invoicePreviewArea').style.display = 'none';
+          window.currentInvoiceData = null;
+
+          // Reload invoices list
+          loadInvoicesList();
+        }, 500);
 
       } catch (err) {
         console.error('Error saving invoice:', err);
@@ -2589,18 +2650,98 @@
           const row = tbody.insertRow();
           row.innerHTML = `
             <td>${invoice.invoice_number}</td>
-            <td>${new Date(invoice.created_at).toLocaleDateString()}</td>
-            <td>${new Date(invoice.date_range_start).toLocaleDateString()} – ${new Date(invoice.date_range_end).toLocaleDateString()}</td>
+            <td>${new Date(invoice.created_at + 'T00:00:00').toLocaleDateString()}</td>
+            <td>${new Date(invoice.date_range_start + 'T00:00:00').toLocaleDateString()} – ${new Date(invoice.date_range_end + 'T00:00:00').toLocaleDateString()}</td>
             <td>${invoice.ticket_count}</td>
             <td>$${invoice.total_amount.toFixed(2)}</td>
             <td>
-              <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="alert('PDF generation coming soon!')">View PDF</button>
+              <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="regenerateInvoicePDF('${invoice.invoice_number}', '${invoice.date_range_start}', '${invoice.date_range_end}')">Print PDF</button>
             </td>
           `;
         });
 
       } catch (err) {
         console.error('Error loading invoices:', err);
+      }
+    }
+
+    // Regenerate invoice for printing from saved invoice
+    async function regenerateInvoicePDF(invoiceNumber, startDate, endDate) {
+      try {
+        // Fetch the tickets for this date range
+        const { data: tickets, error } = await supabaseClient
+          .from('tickets')
+          .select('*')
+          .gte('ticket_date', startDate)
+          .lte('ticket_date', endDate)
+          .order('ticket_date', { ascending: true });
+
+        if (error) throw error;
+
+        if (!tickets || tickets.length === 0) {
+          alert('No tickets found for this invoice period');
+          return;
+        }
+
+        // Populate the preview with the saved invoice data
+        document.getElementById('invoicePreviewArea').style.display = 'block';
+        document.getElementById('invoiceNumber').textContent = invoiceNumber;
+        document.getElementById('invoiceDate').textContent = new Date().toLocaleDateString();
+        document.getElementById('invoicePeriod').textContent = 
+          new Date(startDate + 'T00:00:00').toLocaleDateString() + ' – ' + new Date(endDate + 'T00:00:00').toLocaleDateString();
+
+        // Populate table
+        const tbody = document.getElementById('invoiceTicketsBody');
+        tbody.innerHTML = '';
+
+        tickets.forEach(ticket => {
+          const ticketDate = ticket.ticket_date;
+          const displayDate = new Date(ticketDate + 'T00:00:00').toLocaleDateString();
+          
+          const row = tbody.insertRow();
+          row.innerHTML = `
+            <td><input type="text" value="${ticket.ticket_number}"></td>
+            <td><input type="text" value="${displayDate}"></td>
+            <td><input type="text" value="${ticket.truck_number}"></td>
+            <td style="text-align: center;">1</td>
+            <td style="text-align: right;"><input type="number" value="${ticket.net_tons.toFixed(2)}" step="0.01"></td>
+            <td style="text-align: right;">$500.00</td>
+          `;
+        });
+
+        // Calculate totals
+        const subtotal = tickets.length * 500;
+        document.getElementById('invoiceSubtotal').textContent = '$' + subtotal.toFixed(2);
+
+        // Get fuel surcharge from saved invoice
+        const { data: savedInvoice } = await supabaseClient
+          .from('invoices')
+          .select('fuel_surcharge')
+          .eq('invoice_number', invoiceNumber)
+          .single();
+
+        const fuelSurcharge = savedInvoice?.fuel_surcharge || 0;
+
+        if (fuelSurcharge > 0) {
+          document.getElementById('fuelSurchargeSection').style.display = 'block';
+          document.getElementById('fuelSurchargeTotal').textContent = '$' + fuelSurcharge.toFixed(2);
+          document.getElementById('fuelSurchargeCalc').innerHTML = 'See original invoice for calculation';
+          document.getElementById('invoiceGrandTotal').textContent = '$' + (subtotal + fuelSurcharge).toFixed(2);
+        } else {
+          document.getElementById('fuelSurchargeSection').style.display = 'none';
+          document.getElementById('invoiceGrandTotal').textContent = '$' + subtotal.toFixed(2);
+        }
+
+        // Scroll to invoice and trigger print
+        document.getElementById('invoicePreviewArea').scrollIntoView({ behavior: 'smooth' });
+        
+        setTimeout(() => {
+          window.print();
+        }, 500);
+
+      } catch (err) {
+        console.error('Error regenerating invoice:', err);
+        alert('Error loading invoice: ' + err.message);
       }
     }
 
