@@ -907,9 +907,108 @@
         </div>
       </div>
 
+      <!-- ALL MY TICKETS (EXPANDABLE) -->
+      <div class="form-card" style="margin-top: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleAllTickets()">
+          <h2 class="card-title" style="margin: 0;">All My Tickets</h2>
+          <button class="btn btn-secondary" style="padding: 8px 16px;" id="toggleTicketsBtn">
+            Show All
+          </button>
+        </div>
+
+        <div id="allTicketsSection" style="display: none; margin-top: 20px;">
+          <!-- Filters -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+            <div class="form-group">
+              <label class="form-label">Year</label>
+              <select class="form-select" id="filterTicketYear" onchange="filterAllTickets()">
+                <option value="all">All Years</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Month</label>
+              <select class="form-select" id="filterTicketMonth" onchange="filterAllTickets()">
+                <option value="all">All Months</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Truck</label>
+              <select class="form-select" id="filterTicketTruck" onchange="filterAllTickets()">
+                <option value="all">All Trucks</option>
+                <option value="Truck 1">Truck 1</option>
+                <option value="Truck 2">Truck 2</option>
+                <option value="Truck 3">Truck 3</option>
+                <option value="Truck 4">Truck 4</option>
+                <option value="Truck 5">Truck 5</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Tickets Table -->
+          <div style="overflow-x: auto; background: white; border-radius: 12px; border: 1px solid var(--border);">
+            <table>
+              <thead style="background: #fafafa;">
+                <tr>
+                  <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Date</th>
+                  <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Ticket #</th>
+                  <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Truck</th>
+                  <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Gross (lbs)</th>
+                  <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Tare (lbs)</th>
+                  <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Net Tons</th>
+                  <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">3rd Load</th>
+                  <th style="padding: 14px; text-align: right; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Pay</th>
+                </tr>
+              </thead>
+              <tbody id="allTicketsBody">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totals -->
+          <div class="summary-box" style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6;">
+              <span>Total Tickets:</span>
+              <span id="allTicketsCount" style="font-weight: 600;">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6;">
+              <span>Total Loads Pay:</span>
+              <span id="allTicketsLoadPay" style="font-weight: 600;">$0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6;">
+              <span>Total Bonus Pay:</span>
+              <span id="allTicketsBonusPay" style="font-weight: 600;">$0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 16px 0 0 0; font-size: 18px; font-weight: 700; color: var(--brand-primary);">
+              <span>Total Earnings:</span>
+              <span id="allTicketsTotal">$0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- REVENUE ANALYTICS CHART -->
       <div class="form-card" style="margin-top: 24px;">
-        <h2 class="card-title">My Earnings Analytics</h2>
+        <h2 class="card-title">Earnings Chart</h2>
 
         <!-- Chart Filters -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
@@ -1324,6 +1423,93 @@
     // Driver Earnings Chart
     let driverChart = null;
     let allDriverTickets = [];
+
+    // Toggle All Tickets Section
+    function toggleAllTickets() {
+      const section = document.getElementById('allTicketsSection');
+      const btn = document.getElementById('toggleTicketsBtn');
+      
+      if (section.style.display === 'none') {
+        section.style.display = 'block';
+        btn.textContent = 'Hide';
+        populateAllTickets();
+      } else {
+        section.style.display = 'none';
+        btn.textContent = 'Show All';
+      }
+    }
+
+    // Populate All Tickets Table
+    function populateAllTickets(filteredTickets = null) {
+      const tickets = filteredTickets || allDriverTickets;
+      const tbody = document.getElementById('allTicketsBody');
+      
+      tbody.innerHTML = '';
+
+      if (tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found</td></tr>';
+        document.getElementById('allTicketsCount').textContent = '0';
+        document.getElementById('allTicketsLoadPay').textContent = '$0.00';
+        document.getElementById('allTicketsBonusPay').textContent = '$0.00';
+        document.getElementById('allTicketsTotal').textContent = '$0.00';
+        return;
+      }
+
+      let totalLoadPay = 0;
+      let totalBonusPay = 0;
+
+      tickets.forEach(ticket => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td style="padding: 16px;">${new Date(ticket.ticket_date).toLocaleDateString()}</td>
+          <td style="padding: 16px;">${ticket.ticket_number}</td>
+          <td style="padding: 16px;">${ticket.truck_number}</td>
+          <td style="padding: 16px;">${ticket.gross_weight.toLocaleString()}</td>
+          <td style="padding: 16px;">${ticket.tare_weight.toLocaleString()}</td>
+          <td style="padding: 16px;">${ticket.net_tons.toFixed(2)}</td>
+          <td style="padding: 16px;">${ticket.third_load ? '<span class="badge success">Yes (+$10)</span>' : '-'}</td>
+          <td style="padding: 16px; text-align: right; font-weight: 600;">$${(ticket.driver_pay + ticket.bonus_pay).toFixed(2)}</td>
+        `;
+
+        totalLoadPay += ticket.driver_pay;
+        totalBonusPay += ticket.bonus_pay;
+      });
+
+      document.getElementById('allTicketsCount').textContent = tickets.length;
+      document.getElementById('allTicketsLoadPay').textContent = '$' + totalLoadPay.toFixed(2);
+      document.getElementById('allTicketsBonusPay').textContent = '$' + totalBonusPay.toFixed(2);
+      document.getElementById('allTicketsTotal').textContent = '$' + (totalLoadPay + totalBonusPay).toFixed(2);
+    }
+
+    // Filter All Tickets
+    function filterAllTickets() {
+      const year = document.getElementById('filterTicketYear').value;
+      const month = document.getElementById('filterTicketMonth').value;
+      const truck = document.getElementById('filterTicketTruck').value;
+
+      let filtered = [...allDriverTickets];
+
+      // Filter by year
+      if (year !== 'all') {
+        filtered = filtered.filter(t => {
+          return new Date(t.ticket_date).getFullYear() === parseInt(year);
+        });
+      }
+
+      // Filter by month
+      if (month !== 'all') {
+        filtered = filtered.filter(t => {
+          return new Date(t.ticket_date).getMonth() + 1 === parseInt(month);
+        });
+      }
+
+      // Filter by truck
+      if (truck !== 'all') {
+        filtered = filtered.filter(t => t.truck_number === truck);
+      }
+
+      populateAllTickets(filtered);
+    }
 
     function initializeDriverChart(chartType = 'line') {
       const ctx = document.getElementById('driverEarningsChart');
