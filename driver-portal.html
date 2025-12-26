@@ -1076,8 +1076,42 @@
         const bonusPay = thirdLoad ? 10 : 0;
         const driverPay = 130;
 
-        // TODO: Upload photo to Supabase Storage (for now, skip photo)
-        const photoUrl = 'pending'; // We'll add photo upload in next step
+        let photoUrl = 'pending';
+
+        // Upload photo to Supabase Storage
+        console.log('Photo file:', photoFile);
+        console.log('Photo file exists:', !!photoFile);
+        
+        if (photoFile) {
+          console.log('Starting photo upload...');
+          const fileExt = photoFile.name.split('.').pop();
+          const fileName = `${currentDriver.id}_${Date.now()}.${fileExt}`;
+          const filePath = `ticket-photos/${fileName}`;
+          
+          console.log('Upload path:', filePath);
+
+          const { data: uploadData, error: uploadError } = await supabaseClient.storage
+            .from('b5-trucking-photos')
+            .upload(filePath, photoFile);
+
+          console.log('Upload result:', { uploadData, uploadError });
+
+          if (uploadError) {
+            console.error('Photo upload error:', uploadError);
+            // Continue without photo - don't block ticket submission
+            photoUrl = 'upload-failed';
+          } else {
+            // Get public URL
+            const { data: urlData } = supabaseClient.storage
+              .from('b5-trucking-photos')
+              .getPublicUrl(filePath);
+            
+            console.log('Public URL:', urlData);
+            photoUrl = urlData.publicUrl;
+          }
+        } else {
+          console.log('No photo file selected');
+        }
 
         // Insert ticket into database
         const { data: newTicket, error } = await supabaseClient
