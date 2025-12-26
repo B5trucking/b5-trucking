@@ -945,6 +945,12 @@
         document.getElementById('driverName').value = driver.name;
         document.getElementById('driverBadge').textContent = driver.name;
 
+        // Save session to localStorage
+        localStorage.setItem('b5_driver_session', JSON.stringify({
+          driver: driver,
+          loginTime: new Date().toISOString()
+        }));
+
         // Show name input for "Other" drivers (code 00)
         if (code === '00') {
           document.getElementById('otherNameSection').classList.remove('hidden');
@@ -1216,6 +1222,9 @@
 
     function logout() {
       if (confirm('Are you sure you want to logout?')) {
+        // Clear session
+        localStorage.removeItem('b5_driver_session');
+        
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('appContainer').classList.remove('active');
         document.getElementById('driverCode').value = '';
@@ -1234,7 +1243,61 @@
           }
         });
       }
+
+      // Check for existing session
+      checkExistingSession();
     });
+
+    // Check if user is already logged in
+    async function checkExistingSession() {
+      const session = localStorage.getItem('b5_driver_session');
+      
+      if (session) {
+        try {
+          const { driver, loginTime } = JSON.parse(session);
+          
+          // Check if session is less than 7 days old
+          const sessionAge = new Date() - new Date(loginTime);
+          const sevenDays = 7 * 24 * 60 * 60 * 1000;
+          
+          if (sessionAge < sevenDays) {
+            // Verify driver still exists and is active
+            const { data: verifiedDriver, error } = await supabaseClient
+              .from('drivers')
+              .select('*')
+              .eq('id', driver.id)
+              .eq('status', 'active')
+              .single();
+
+            if (!error && verifiedDriver) {
+              // Auto-login
+              currentDriver = verifiedDriver;
+              document.getElementById('driverName').value = verifiedDriver.name;
+              document.getElementById('driverBadge').textContent = verifiedDriver.name;
+
+              if (verifiedDriver.driver_code === '00') {
+                document.getElementById('otherNameSection').classList.remove('hidden');
+              }
+
+              document.getElementById('loginScreen').style.display = 'none';
+              document.getElementById('appContainer').classList.add('active');
+              document.getElementById('ticketDate').valueAsDate = new Date();
+
+              await loadWeeklyTickets();
+            } else {
+              // Session invalid - clear it
+              localStorage.removeItem('b5_driver_session');
+            }
+          } else {
+            // Session expired - clear it
+            localStorage.removeItem('b5_driver_session');
+          }
+        } catch (err) {
+          console.error('Session restore error:', err);
+          localStorage.removeItem('b5_driver_session');
+        }
+      }
+    }
   </script>
 </body>
 </html>
