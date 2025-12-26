@@ -1753,8 +1753,14 @@
       const password = document.getElementById('adminPassword').value;
 
       // Simple validation - TODO: Add proper Supabase authentication later
-      if (username === 'admin' && password === 'admin') {
+      if (username === 'Bridger' && password === 'Gandalf17') {
         try {
+          // Save admin session
+          localStorage.setItem('b5_admin_session', JSON.stringify({
+            username: username,
+            loginTime: new Date().toISOString()
+          }));
+
           // Load initial data
           await loadAllData();
 
@@ -2068,7 +2074,53 @@
           }
         });
       }
+
+      // Check for existing admin session
+      checkAdminSession();
     });
+
+    // Check if admin is already logged in
+    async function checkAdminSession() {
+      const session = localStorage.getItem('b5_admin_session');
+      
+      if (session) {
+        try {
+          const { username, loginTime } = JSON.parse(session);
+          
+          // Check if session is less than 7 days old
+          const sessionAge = new Date() - new Date(loginTime);
+          const sevenDays = 7 * 24 * 60 * 60 * 1000;
+          
+          if (sessionAge < sevenDays && username === 'admin') {
+            // Auto-login admin
+            await loadAllData();
+
+            // Hide login screen
+            document.getElementById('adminLoginScreen').classList.add('hidden');
+            
+            // Show sidebar and main content
+            document.querySelector('.sidebar').classList.add('show');
+            document.querySelector('.main-content').classList.add('show');
+            
+            // Initialize chart
+            setTimeout(() => {
+              if (typeof initializeRevenueChart === 'function') {
+                initializeRevenueChart();
+                if (typeof updateRevenueChart === 'function') {
+                  updateRevenueChart();
+                }
+              }
+            }, 100);
+          } else {
+            // Session expired - clear it
+            localStorage.removeItem('b5_admin_session');
+          }
+        } catch (err) {
+          console.error('Session restore error:', err);
+          localStorage.removeItem('b5_admin_session');
+        }
+      }
+    }
 
     // Navigation
     function showSection(sectionId) {
@@ -2546,6 +2598,9 @@
 
     function logout() {
       if (confirm('Are you sure you want to logout?')) {
+        // Clear session
+        localStorage.removeItem('b5_admin_session');
+        
         // Hide sidebar and main content
         document.querySelector('.sidebar').classList.remove('show');
         document.querySelector('.main-content').classList.remove('show');
