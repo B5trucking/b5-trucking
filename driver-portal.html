@@ -6,6 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>B5 Trucking - Driver Portal</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --brand-primary: #dc2626;
@@ -905,6 +906,72 @@
           </div>
         </div>
       </div>
+
+      <!-- REVENUE ANALYTICS CHART -->
+      <div class="form-card" style="margin-top: 24px;">
+        <h2 class="card-title">My Earnings Analytics</h2>
+
+        <!-- Chart Filters -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="form-group">
+            <label class="form-label">Year</label>
+            <select class="form-select" id="driverChartYear" onchange="updateDriverChart()">
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">View</label>
+            <select class="form-select" id="driverChartView" onchange="handleDriverViewChange()">
+              <option value="monthly">Monthly (Full Year)</option>
+              <option value="weekly">Weekly (Last 8 Weeks)</option>
+              <option value="quarter">Quarterly</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="driverMonthFilter" style="display: none;">
+            <label class="form-label">Month</label>
+            <select class="form-select" id="driverChartMonth" onchange="updateDriverChart()">
+              <option value="all">All Months</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Chart Canvas -->
+        <div style="background: white; padding: 24px; border-radius: 12px; border: 1px solid var(--border);">
+          <canvas id="driverEarningsChart" style="max-height: 350px;"></canvas>
+        </div>
+
+        <!-- Chart Summary Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-top: 20px;">
+          <div style="background: #fafafa; padding: 16px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Total Earnings</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--brand-primary);" id="driverTotalEarnings">$0</div>
+          </div>
+          <div style="background: #fafafa; padding: 16px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Total Loads</div>
+            <div style="font-size: 20px; font-weight: 700;" id="driverTotalLoads">0</div>
+          </div>
+          <div style="background: #fafafa; padding: 16px; border-radius: 10px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Avg Per Load</div>
+            <div style="font-size: 20px; font-weight: 700;" id="driverAvgPerLoad">$0</div>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -964,6 +1031,9 @@
 
         // Load weekly tickets
         await loadWeeklyTickets();
+
+        // Load all tickets for chart
+        await loadAllDriverTickets();
 
       } catch (err) {
         console.error('Login error:', err);
@@ -1164,6 +1234,9 @@
 
         // Reload tickets
         await loadWeeklyTickets();
+        
+        // Reload chart data
+        await loadAllDriverTickets();
 
       } catch (err) {
         console.error('Error submitting ticket:', err);
@@ -1248,6 +1321,231 @@
       checkExistingSession();
     });
 
+    // Driver Earnings Chart
+    let driverChart = null;
+    let allDriverTickets = [];
+
+    function initializeDriverChart(chartType = 'line') {
+      const ctx = document.getElementById('driverEarningsChart');
+      if (!ctx) return;
+
+      const chartCtx = ctx.getContext('2d');
+      
+      const initialData = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [{
+          label: 'Earnings',
+          data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          borderColor: '#dc2626',
+          backgroundColor: chartType === 'bar' ? 'rgba(220, 38, 38, 0.8)' : 'rgba(220, 38, 38, 0.1)',
+          tension: 0.4,
+          fill: true,
+          borderWidth: chartType === 'bar' ? 0 : 3,
+          pointBackgroundColor: '#dc2626',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: chartType === 'bar' ? 0 : 5,
+          pointHoverRadius: chartType === 'bar' ? 0 : 7
+        }]
+      };
+
+      driverChart = new Chart(chartCtx, {
+        type: chartType,
+        data: initialData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: '2025 - My Earnings',
+              color: '#111827',
+              font: { size: 16, weight: '600' },
+              padding: { bottom: 20 }
+            },
+            tooltip: {
+              backgroundColor: '#111827',
+              padding: 12,
+              displayColors: false,
+              callbacks: {
+                label: function(context) {
+                  return '$' + context.parsed.y.toLocaleString();
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#f3f4f6' },
+              ticks: {
+                callback: function(value) {
+                  return '$' + value;
+                },
+                color: '#6b7280'
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#6b7280' }
+            }
+          }
+        }
+      });
+    }
+
+    async function loadAllDriverTickets() {
+      if (!currentDriver) return;
+
+      try {
+        const { data: tickets, error } = await supabaseClient
+          .from('tickets')
+          .select('*')
+          .eq('driver_id', currentDriver.id)
+          .order('ticket_date', { ascending: true });
+
+        if (error) throw error;
+        allDriverTickets = tickets || [];
+
+        // Initialize and update chart
+        if (!driverChart) {
+          initializeDriverChart();
+        }
+        updateDriverChart();
+
+      } catch (err) {
+        console.error('Error loading driver tickets:', err);
+      }
+    }
+
+    function updateDriverChart() {
+      if (!driverChart || !currentDriver) return;
+
+      const year = parseInt(document.getElementById('driverChartYear').value);
+      const view = document.getElementById('driverChartView').value;
+      const month = document.getElementById('driverChartMonth').value;
+
+      // Filter tickets by year
+      let filteredTickets = allDriverTickets.filter(t => {
+        const ticketDate = new Date(t.ticket_date);
+        return ticketDate.getFullYear() === year;
+      });
+
+      let labels, data, chartType = 'line';
+      
+      if (view === 'monthly') {
+        if (month !== 'all') {
+          // Daily data for specific month
+          const selectedMonth = parseInt(month);
+          const daysInMonth = new Date(year, selectedMonth, 0).getDate();
+          labels = Array.from({length: daysInMonth}, (_, i) => (i + 1).toString());
+          data = new Array(daysInMonth).fill(0);
+
+          filteredTickets.forEach(t => {
+            const ticketDate = new Date(t.ticket_date);
+            if (ticketDate.getMonth() + 1 === selectedMonth) {
+              const day = ticketDate.getDate() - 1;
+              data[day] += (t.driver_pay + t.bonus_pay);
+            }
+          });
+
+          const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
+                            'July', 'August', 'September', 'October', 'November', 'December'];
+          driverChart.options.plugins.title.text = monthNames[selectedMonth] + ' ' + year + ' - Daily Earnings';
+        } else {
+          // Monthly data for full year
+          labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          data = new Array(12).fill(0);
+          
+          filteredTickets.forEach(t => {
+            const monthIndex = new Date(t.ticket_date).getMonth();
+            data[monthIndex] += (t.driver_pay + t.bonus_pay);
+          });
+
+          driverChart.options.plugins.title.text = year + ' - Monthly Earnings';
+        }
+      } else if (view === 'weekly') {
+        // Last 8 weeks
+        labels = [];
+        data = new Array(8).fill(0);
+        const now = new Date();
+        
+        for (let i = 7; i >= 0; i--) {
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - (i * 7));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          labels.push(`Week ${8 - i}`);
+          
+          allDriverTickets.forEach(t => {
+            const ticketDate = new Date(t.ticket_date);
+            if (ticketDate >= weekStart && ticketDate <= weekEnd) {
+              data[7 - i] += (t.driver_pay + t.bonus_pay);
+            }
+          });
+        }
+        
+        driverChart.options.plugins.title.text = 'Last 8 Weeks - Earnings';
+      } else if (view === 'quarter') {
+        labels = ['Q1', 'Q2', 'Q3', 'Q4'];
+        data = [0, 0, 0, 0];
+        chartType = 'bar';
+        
+        filteredTickets.forEach(t => {
+          const monthIndex = new Date(t.ticket_date).getMonth();
+          const quarter = Math.floor(monthIndex / 3);
+          data[quarter] += (t.driver_pay + t.bonus_pay);
+        });
+
+        driverChart.options.plugins.title.text = year + ' - Quarterly Earnings';
+      }
+
+      // Update chart type if needed
+      if (driverChart.config.type !== chartType) {
+        driverChart.destroy();
+        initializeDriverChart(chartType);
+        return updateDriverChart(); // Recursive call with new chart
+      }
+
+      // Update chart data
+      driverChart.data.labels = labels;
+      driverChart.data.datasets[0].data = data;
+      
+      // Update styling
+      if (chartType === 'bar') {
+        driverChart.data.datasets[0].backgroundColor = 'rgba(220, 38, 38, 0.8)';
+        driverChart.data.datasets[0].borderWidth = 0;
+      } else {
+        driverChart.data.datasets[0].backgroundColor = 'rgba(220, 38, 38, 0.1)';
+        driverChart.data.datasets[0].borderWidth = 3;
+      }
+      
+      driverChart.update();
+
+      // Update summary stats
+      const total = data.reduce((a, b) => a + b, 0);
+      const loads = filteredTickets.length;
+      document.getElementById('driverTotalEarnings').textContent = '$' + total.toLocaleString();
+      document.getElementById('driverTotalLoads').textContent = loads;
+      document.getElementById('driverAvgPerLoad').textContent = loads > 0 ? '$' + Math.round(total / loads) : '$0';
+    }
+
+    function handleDriverViewChange() {
+      const view = document.getElementById('driverChartView').value;
+      const monthFilter = document.getElementById('driverMonthFilter');
+      
+      if (view === 'monthly') {
+        monthFilter.style.display = 'block';
+      } else {
+        monthFilter.style.display = 'none';
+        document.getElementById('driverChartMonth').value = 'all';
+      }
+      
+      updateDriverChart();
+    }
+
     // Check if user is already logged in
     async function checkExistingSession() {
       const session = localStorage.getItem('b5_driver_session');
@@ -1284,6 +1582,7 @@
               document.getElementById('ticketDate').valueAsDate = new Date();
 
               await loadWeeklyTickets();
+              await loadAllDriverTickets();
             } else {
               // Session invalid - clear it
               localStorage.removeItem('b5_driver_session');
