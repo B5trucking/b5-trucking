@@ -1753,18 +1753,18 @@
               <button class="btn btn-secondary" onclick="toggleTicketList()" id="toggleTicketListBtn" style="width: 100%; padding: 12px; font-size: 14px; background: #f3f4f6; border: 1px solid #e5e7eb; color: #374151;">
                 <span id="ticketListBtnText">▼ View & Edit Individual Tickets</span>
               </button>
-              <div id="individualTicketsList" style="display: none; margin-top: 16px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
-                <table>
+              <div id="individualTicketsList" style="display: none; margin-top: 16px; border: 1px solid #e5e7eb; border-radius: 12px; overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch;">
+                <table style="min-width: 800px;">
                   <thead style="background: #f9fafb;">
                     <tr>
-                      <th>Date</th>
-                      <th>Ticket #</th>
-                      <th>Truck</th>
-                      <th style="text-align: right;">Net Tons</th>
-                      <th style="text-align: right;">Base Pay</th>
-                      <th style="text-align: right;">Bonus</th>
-                      <th style="text-align: right;">Total</th>
-                      <th style="width: 140px;">Actions</th>
+                      <th style="white-space: nowrap;">Date</th>
+                      <th style="white-space: nowrap;">Ticket #</th>
+                      <th style="white-space: nowrap;">Truck</th>
+                      <th style="text-align: right; white-space: nowrap;">Net Tons</th>
+                      <th style="text-align: right; white-space: nowrap;">Base Pay</th>
+                      <th style="text-align: right; white-space: nowrap;">Bonus</th>
+                      <th style="text-align: right; white-space: nowrap;">Total</th>
+                      <th style="width: 140px; white-space: nowrap;">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="individualTicketsBody">
@@ -2304,11 +2304,11 @@
           document.querySelector('.sidebar').classList.add('show');
           document.querySelector('.main-content').classList.add('show');
           
-          // Initialize chart
+          // Initialize chart AFTER data is loaded
           setTimeout(() => {
             if (typeof initializeRevenueChart === 'function') {
               initializeRevenueChart();
-              // Update with real data
+              // Update with real data (allTickets is now loaded)
               if (typeof updateRevenueChart === 'function') {
                 updateRevenueChart();
               }
@@ -2730,7 +2730,7 @@
             document.querySelector('.sidebar').classList.add('show');
             document.querySelector('.main-content').classList.add('show');
             
-            // Initialize chart
+            // Initialize chart AFTER data is loaded
             setTimeout(() => {
               if (typeof initializeRevenueChart === 'function') {
                 initializeRevenueChart();
