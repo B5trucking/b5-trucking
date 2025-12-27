@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -4500,10 +4501,15 @@
       console.log('Chart filters - Year:', year, 'View:', view, 'Month:', month, 'Driver:', driver);
 
       console.log('Updating chart with', allInvoices.length, 'total invoices');
+      
+      // Sample first invoice to see structure
+      if (allInvoices.length > 0) {
+        console.log('Sample invoice:', allInvoices[0]);
+      }
 
-      // Filter invoices by year
+      // Filter invoices by year (using date_range_end)
       let filteredInvoices = allInvoices.filter(inv => {
-        const invDate = new Date(inv.invoice_date);
+        const invDate = new Date(inv.date_range_end);
         const invYear = invDate.getFullYear();
         return invYear === year;
       });
@@ -4526,7 +4532,7 @@
           // Calculate revenue per day from invoices
           data = new Array(daysInMonth).fill(0);
           filteredInvoices.forEach(inv => {
-            const invDate = new Date(inv.invoice_date);
+            const invDate = new Date(inv.date_range_end);
             if (invDate.getMonth() + 1 === selectedMonth) {
               const day = invDate.getDate() - 1; // 0-indexed
               const amount = inv.total_amount || 0;
@@ -4534,7 +4540,7 @@
               data[day] += amount;
               totalRevenue += amount;
               totalTickets += tickets;
-              console.log('Invoice:', inv.invoice_number, 'Amount:', amount, 'Tickets:', tickets);
+              console.log('Invoice:', inv.invoice_number, 'Date:', inv.date_range_end, 'Amount:', amount, 'Tickets:', tickets);
             }
           });
 
@@ -4547,14 +4553,14 @@
           data = new Array(12).fill(0);
           
           filteredInvoices.forEach(inv => {
-            const invDate = new Date(inv.invoice_date);
+            const invDate = new Date(inv.date_range_end);
             const monthIndex = invDate.getMonth();
             const amount = inv.total_amount || 0;
             const tickets = inv.ticket_count || 0;
             data[monthIndex] += amount;
             totalRevenue += amount;
             totalTickets += tickets;
-            console.log('Invoice:', inv.invoice_number, 'Amount:', amount, 'Tickets:', tickets);
+            console.log('Invoice:', inv.invoice_number, 'Date:', inv.date_range_end, 'Amount:', amount, 'Tickets:', tickets);
           });
 
           console.log('Year total - Revenue:', totalRevenue, 'Tickets:', totalTickets);
@@ -4575,7 +4581,7 @@
           labels.push(`Week ${8 - i}`);
           
           allInvoices.forEach(inv => {
-            const invDate = new Date(inv.invoice_date);
+            const invDate = new Date(inv.date_range_end);
             if (invDate >= weekStart && invDate <= weekEnd) {
               const amount = inv.total_amount || 0;
               const tickets = inv.ticket_count || 0;
@@ -4594,7 +4600,7 @@
         chartType = 'bar';
         
         filteredInvoices.forEach(inv => {
-          const invDate = new Date(inv.invoice_date);
+          const invDate = new Date(inv.date_range_end);
           const monthIndex = invDate.getMonth();
           const quarter = Math.floor(monthIndex / 3);
           const amount = inv.total_amount || 0;
