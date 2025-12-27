@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1949,6 +1948,7 @@
               <tr>
                 <th>Driver Code</th>
                 <th>Driver Name</th>
+                <th>Pay Rate</th>
                 <th>Date Added</th>
                 <th>Total Tickets</th>
                 <th>Total Pay (All Time)</th>
@@ -2043,6 +2043,11 @@
             <span class="form-helper">Unique 2-digit code for driver login</span>
           </div>
           <div class="form-group">
+            <label class="form-label">Pay Rate (per load)</label>
+            <input type="number" class="form-input" id="newDriverRate" value="130" step="0.01" min="0">
+            <span class="form-helper">Default: $130 per load</span>
+          </div>
+          <div class="form-group">
             <label class="form-label">Status</label>
             <select class="form-select" id="newDriverStatus">
               <option value="active">Active</option>
@@ -2076,6 +2081,10 @@
             <label class="form-label">Driver Code (2 digits)</label>
             <input type="text" class="form-input" id="editDriverCode" maxlength="2" placeholder="00">
             <span class="form-helper">Unique 2-digit code for driver login</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pay Rate (per load)</label>
+            <input type="number" class="form-input" id="editDriverRate" step="0.01" min="0">
           </div>
           <div class="form-group">
             <label class="form-label">Status</label>
@@ -2688,13 +2697,14 @@
         row.innerHTML = `
           <td><span class="badge info">${driver.driver_code}</span></td>
           <td>${driver.name}</td>
+          <td style="font-weight: 600; color: #059669;">$${(driver.rate || 130).toFixed(2)}</td>
           <td>${new Date(driver.created_at).toLocaleDateString()}</td>
           <td>${driverTickets.length}</td>
           <td>$${totalPay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
           <td><span class="badge ${driver.status === 'active' ? 'success' : 'warning'}">${driver.status === 'active' ? 'Active' : 'Inactive'}</span></td>
           <td>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="editDriver('${driver.id}', '${driver.driver_code}', '${driver.name}', '${driver.status}')">Edit</button>
+              <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="editDriver('${driver.id}', '${driver.driver_code}', '${driver.name}', '${driver.rate || 130}', '${driver.status}')">Edit</button>
               <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; background: #fef3c7; border-color: #fde68a;" onclick="toggleDriverStatus('${driver.id}', '${driver.name}', '${driver.status}')">
                 ${driver.status === 'active' ? 'Deactivate' : 'Activate'}
               </button>
@@ -2822,15 +2832,21 @@
     async function saveDriver() {
       const name = document.getElementById('newDriverName').value;
       const code = document.getElementById('newDriverCode').value;
+      const rate = parseFloat(document.getElementById('newDriverRate').value);
       const status = document.getElementById('newDriverStatus').value;
 
-      if (!name || !code) {
+      if (!name || !code || !rate) {
         alert('Please fill in all required fields');
         return;
       }
 
       if (code.length !== 2 || !/^\d+$/.test(code)) {
         alert('Driver code must be exactly 2 digits (00-99)');
+        return;
+      }
+
+      if (rate <= 0) {
+        alert('Pay rate must be greater than 0');
         return;
       }
 
@@ -2853,6 +2869,7 @@
           .insert({
             name: name,
             driver_code: code,
+            rate: rate,
             status: status,
             is_active: status === 'active'  // Set is_active based on status
           })
@@ -2890,12 +2907,13 @@
       document.getElementById('editDriverStatus').value = 'active';
     }
 
-    function editDriver(id, code, name, status) {
+    function editDriver(id, code, name, rate, status) {
       editingDriverId = id;
       // Populate edit modal with current driver data
       document.getElementById('editDriverOriginalCode').value = code;
       document.getElementById('editDriverName').value = name;
       document.getElementById('editDriverCode').value = code;
+      document.getElementById('editDriverRate').value = rate || 130;
       document.getElementById('editDriverStatus').value = status;
       
       openEditDriverModal();
@@ -2904,16 +2922,22 @@
     async function updateDriver() {
       const name = document.getElementById('editDriverName').value;
       const code = document.getElementById('editDriverCode').value;
+      const rate = parseFloat(document.getElementById('editDriverRate').value);
       const status = document.getElementById('editDriverStatus').value;
       const originalCode = document.getElementById('editDriverOriginalCode').value;
 
-      if (!name || !code) {
+      if (!name || !code || !rate) {
         alert('Please fill in all required fields');
         return;
       }
 
       if (code.length !== 2 || !/^\d+$/.test(code)) {
         alert('Driver code must be exactly 2 digits (00-99)');
+        return;
+      }
+
+      if (rate <= 0) {
+        alert('Pay rate must be greater than 0');
         return;
       }
 
@@ -2938,6 +2962,7 @@
           .update({
             name: name,
             driver_code: code,
+            rate: rate,
             status: status
           })
           .eq('id', editingDriverId);
