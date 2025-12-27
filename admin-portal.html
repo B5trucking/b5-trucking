@@ -3266,14 +3266,24 @@
     // Load unpaid tickets summary
     async function loadUnpaidSummary() {
       try {
-        const { data: tickets, error } = await supabaseClient
+        // Get all active drivers
+        const { data: drivers, error: driversError } = await supabaseClient
+          .from('drivers')
+          .select('*')
+          .eq('is_active', true)
+          .order('driver_name', { ascending: true });
+
+        if (driversError) throw driversError;
+
+        // Get unpaid tickets
+        const { data: tickets, error: ticketsError } = await supabaseClient
           .from('tickets')
           .select('*')
           .eq('paid', false);
 
-        if (error) throw error;
+        if (ticketsError) throw ticketsError;
 
-        // Group by driver
+        // Group tickets by driver
         const driverMap = {};
         tickets?.forEach(ticket => {
           if (!driverMap[ticket.driver_id]) {
@@ -3288,16 +3298,18 @@
           driverMap[ticket.driver_id].total += (ticket.driver_pay + ticket.bonus_pay);
         });
 
-        const summary = Object.values(driverMap);
+        const unpaidSummary = Object.values(driverMap);
         
-        // Populate main driver filter
+        // Populate main driver filter with ALL active drivers
         const mainFilter = document.getElementById('mainDriverFilter');
         
-        const driverOptions = summary.map(d => `<option value="${d.driver_id}">${d.driver_name}</option>`).join('');
+        const driverOptions = drivers.map(d => 
+          `<option value="${d.id}">${d.driver_name}</option>`
+        ).join('');
         mainFilter.innerHTML = '<option value="all">All Drivers</option>' + driverOptions;
 
-        // Create summary cards
-        displayDriverSummaryCards(summary);
+        // Create summary cards (only drivers with unpaid tickets)
+        displayDriverSummaryCards(unpaidSummary);
 
       } catch (err) {
         console.error('Error loading unpaid summary:', err);
