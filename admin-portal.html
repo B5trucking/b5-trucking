@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -4500,6 +4501,9 @@
 
       let labels, data, chartType = 'line';
       let totalTickets = 0;
+      let totalRevenue = 0;
+      
+      console.log('Filtered invoices for year', year, ':', filteredInvoices.length);
       
       if (view === 'monthly') {
         if (month !== 'all') {
@@ -4514,8 +4518,12 @@
             const invDate = new Date(inv.invoice_date);
             if (invDate.getMonth() + 1 === selectedMonth) {
               const day = invDate.getDate() - 1; // 0-indexed
-              data[day] += inv.total_amount || 0;
-              totalTickets += inv.ticket_count || 0;
+              const amount = inv.total_amount || 0;
+              const tickets = inv.ticket_count || 0;
+              data[day] += amount;
+              totalRevenue += amount;
+              totalTickets += tickets;
+              console.log('Invoice:', inv.invoice_number, 'Amount:', amount, 'Tickets:', tickets);
             }
           });
 
@@ -4530,10 +4538,15 @@
           filteredInvoices.forEach(inv => {
             const invDate = new Date(inv.invoice_date);
             const monthIndex = invDate.getMonth();
-            data[monthIndex] += inv.total_amount || 0;
-            totalTickets += inv.ticket_count || 0;
+            const amount = inv.total_amount || 0;
+            const tickets = inv.ticket_count || 0;
+            data[monthIndex] += amount;
+            totalRevenue += amount;
+            totalTickets += tickets;
+            console.log('Invoice:', inv.invoice_number, 'Amount:', amount, 'Tickets:', tickets);
           });
 
+          console.log('Year total - Revenue:', totalRevenue, 'Tickets:', totalTickets);
           revenueChart.options.plugins.title.text = year + ' - Monthly Revenue';
         }
       } else if (view === 'weekly') {
@@ -4553,12 +4566,16 @@
           allInvoices.forEach(inv => {
             const invDate = new Date(inv.invoice_date);
             if (invDate >= weekStart && invDate <= weekEnd) {
-              data[7 - i] += inv.total_amount || 0;
-              totalTickets += inv.ticket_count || 0;
+              const amount = inv.total_amount || 0;
+              const tickets = inv.ticket_count || 0;
+              data[7 - i] += amount;
+              totalRevenue += amount;
+              totalTickets += tickets;
             }
           });
         }
         
+        console.log('Weekly total - Revenue:', totalRevenue, 'Tickets:', totalTickets);
         revenueChart.options.plugins.title.text = 'Last 8 Weeks - Revenue';
       } else if (view === 'quarter') {
         labels = ['Q1', 'Q2', 'Q3', 'Q4'];
@@ -4569,10 +4586,14 @@
           const invDate = new Date(inv.invoice_date);
           const monthIndex = invDate.getMonth();
           const quarter = Math.floor(monthIndex / 3);
-          data[quarter] += inv.total_amount || 0;
-          totalTickets += inv.ticket_count || 0;
+          const amount = inv.total_amount || 0;
+          const tickets = inv.ticket_count || 0;
+          data[quarter] += amount;
+          totalRevenue += amount;
+          totalTickets += tickets;
         });
 
+        console.log('Quarterly total - Revenue:', totalRevenue, 'Tickets:', totalTickets);
         revenueChart.options.plugins.title.text = year + ' - Quarterly Revenue';
       }
 
@@ -4600,12 +4621,11 @@
       revenueChart.update();
 
       // Update summary stats with real data from invoices
-      const total = data.reduce((a, b) => a + b, 0);
-      document.getElementById('chartTotalRevenue').textContent = '$' + total.toLocaleString();
+      document.getElementById('chartTotalRevenue').textContent = '$' + totalRevenue.toLocaleString();
       document.getElementById('chartTotalTickets').textContent = totalTickets;
-      document.getElementById('chartAvgPerTicket').textContent = totalTickets > 0 ? '$' + Math.round(total / totalTickets) : '$0';
+      document.getElementById('chartAvgPerTicket').textContent = totalTickets > 0 ? '$' + Math.round(totalRevenue / totalTickets) : '$0';
       
-      console.log('Dashboard stats - Revenue:', total, 'Tickets:', totalTickets, 'Avg:', totalTickets > 0 ? (total / totalTickets) : 0);
+      console.log('FINAL Dashboard stats - Revenue: $' + totalRevenue.toLocaleString(), 'Tickets:', totalTickets, 'Avg: $' + (totalTickets > 0 ? Math.round(totalRevenue / totalTickets) : 0));
     }
 
     function handleViewChange() {
