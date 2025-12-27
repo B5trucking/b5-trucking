@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -765,14 +764,6 @@
             <div class="stat-detail">Load pay + bonuses</div>
           </div>
         </div>
-
-        <div class="stat-card gradient-3">
-          <div class="stat-content">
-            <div class="stat-label">Bonus Pay</div>
-            <div class="stat-value" id="bonusEarnings">$0</div>
-            <div class="stat-detail">3rd load bonuses</div>
-          </div>
-        </div>
       </div>
 
       <!-- NAME INPUT FOR "OTHER" DRIVERS -->
@@ -818,14 +809,6 @@
           <div class="form-group">
             <label class="form-label">Date</label>
             <input type="date" class="form-input" id="ticketDate">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">3rd Load Today?</label>
-            <select class="form-select" id="thirdLoad">
-              <option value="No">No</option>
-              <option value="Yes">Yes ($10 bonus)</option>
-            </select>
           </div>
         </div>
 
@@ -877,7 +860,6 @@
                   <th>Date</th>
                   <th>Ticket #</th>
                   <th>Net Tons</th>
-                  <th>3rd Load</th>
                   <th style="text-align: right;">Pay</th>
                 </tr>
               </thead>
@@ -892,12 +874,8 @@
               <span id="totalLoads">0</span>
             </div>
             <div class="summary-row">
-              <span>Load Pay ($130/load):</span>
+              <span>Load Pay:</span>
               <span id="loadPay">$0.00</span>
-            </div>
-            <div class="summary-row">
-              <span>Bonus Pay:</span>
-              <span id="bonusPay">$0.00</span>
             </div>
             <div class="summary-row total">
               <span>Total Earnings:</span>
@@ -972,13 +950,12 @@
                   <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Gross (lbs)</th>
                   <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Tare (lbs)</th>
                   <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Net Tons</th>
-                  <th style="padding: 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">3rd Load</th>
                   <th style="padding: 14px; text-align: right; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Pay</th>
                 </tr>
               </thead>
               <tbody id="allTicketsBody">
                 <tr>
-                  <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found</td>
+                  <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found</td>
                 </tr>
               </tbody>
             </table>
@@ -991,12 +968,8 @@
               <span id="allTicketsCount" style="font-weight: 600;">0</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6;">
-              <span>Total Loads Pay:</span>
+              <span>Total Pay:</span>
               <span id="allTicketsLoadPay" style="font-weight: 600;">$0.00</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f3f4f6;">
-              <span>Total Bonus Pay:</span>
-              <span id="allTicketsBonusPay" style="font-weight: 600;">$0.00</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 16px 0 0 0; font-size: 18px; font-weight: 700; color: var(--brand-primary);">
               <span>Total Earnings:</span>
@@ -1217,7 +1190,6 @@
       const grossWeight = document.getElementById('grossWeight').value.replace(/,/g, '');
       const tareWeight = document.getElementById('tareWeight').value.replace(/,/g, '');
       const routeNotes = document.getElementById('routeNotes').value;
-      const thirdLoad = document.getElementById('thirdLoad').value === 'Yes';
       const photoFile = document.getElementById('ticketPhoto').files[0];
 
       // Get actual driver name for "Other"
@@ -1246,10 +1218,12 @@
       submitBtn.textContent = 'Submitting...';
 
       try {
-        // Calculate values
+        // Calculate values - use driver's rate from database
         const netTons = (parseFloat(grossWeight) - parseFloat(tareWeight)) / 2000;
-        const bonusPay = thirdLoad ? 10 : 0;
-        const driverPay = 130;
+        const driverPay = currentDriver.rate || 130; // Use driver's rate, default to 130
+        const bonusPay = 0; // No more bonus pay
+
+        console.log('Driver pay rate:', driverPay);
 
         let photoUrl = 'pending';
 
@@ -1301,7 +1275,6 @@
             tare_weight: parseFloat(tareWeight),
             net_tons: netTons,
             route_notes: routeNotes,
-            third_load: thirdLoad,
             photo_url: photoUrl,
             driver_pay: driverPay,
             bonus_pay: bonusPay
@@ -1328,7 +1301,6 @@
         document.getElementById('tareWeight').value = '';
         document.getElementById('netTons').value = '';
         document.getElementById('routeNotes').value = '';
-        document.getElementById('thirdLoad').value = 'No';
         document.getElementById('ticketPhoto').value = '';
 
         // Reload tickets
@@ -1350,8 +1322,7 @@
       const tbody = document.getElementById('ticketBody');
       tbody.innerHTML = '';
 
-      let totalLoadPay = 0;
-      let totalBonusPay = 0;
+      let totalPay = 0;
 
       weeklyTickets.forEach((ticket, index) => {
         const row = tbody.insertRow();
@@ -1365,18 +1336,15 @@
           <td>${displayDate}</td>
           <td>${ticket.ticket_number}</td>
           <td>${ticket.net_tons.toFixed(2)} tons</td>
-          <td>${ticket.third_load ? '<span class="badge bonus">+$10</span>' : '-'}</td>
-          <td style="text-align: right; font-weight: 600;">$${(ticket.driver_pay + ticket.bonus_pay).toFixed(2)}</td>
+          <td style="text-align: right; font-weight: 600;">$${ticket.driver_pay.toFixed(2)}</td>
         `;
 
-        totalLoadPay += ticket.driver_pay;
-        totalBonusPay += ticket.bonus_pay;
+        totalPay += ticket.driver_pay;
       });
 
       document.getElementById('totalLoads').textContent = weeklyTickets.length;
-      document.getElementById('loadPay').textContent = '$' + totalLoadPay.toFixed(2);
-      document.getElementById('bonusPay').textContent = '$' + totalBonusPay.toFixed(2);
-      document.getElementById('totalPay').textContent = '$' + (totalLoadPay + totalBonusPay).toFixed(2);
+      document.getElementById('loadPay').textContent = '$' + totalPay.toFixed(2);
+      document.getElementById('totalPay').textContent = '$' + totalPay.toFixed(2);
 
       if (weeklyTickets.length > 0) {
         document.getElementById('submittedSection').classList.remove('hidden');
@@ -1385,16 +1353,13 @@
 
     function updateStats() {
       let totalPay = 0;
-      let totalBonus = 0;
 
       weeklyTickets.forEach(ticket => {
         totalPay += ticket.driver_pay;
-        totalBonus += ticket.bonus_pay;
       });
 
       document.getElementById('weekLoadsCount').textContent = weeklyTickets.length;
-      document.getElementById('weekEarnings').textContent = '$' + (totalPay + totalBonus).toLocaleString();
-      document.getElementById('bonusEarnings').textContent = '$' + totalBonus.toLocaleString();
+      document.getElementById('weekEarnings').textContent = '$' + totalPay.toLocaleString();
     }
 
     function logout() {
@@ -1452,16 +1417,14 @@
       tbody.innerHTML = '';
 
       if (tickets.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found</td></tr>';
         document.getElementById('allTicketsCount').textContent = '0';
         document.getElementById('allTicketsLoadPay').textContent = '$0.00';
-        document.getElementById('allTicketsBonusPay').textContent = '$0.00';
         document.getElementById('allTicketsTotal').textContent = '$0.00';
         return;
       }
 
-      let totalLoadPay = 0;
-      let totalBonusPay = 0;
+      let totalPay = 0;
 
       tickets.forEach(ticket => {
         const row = tbody.insertRow();
@@ -1477,18 +1440,15 @@
           <td style="padding: 16px;">${ticket.gross_weight.toLocaleString()}</td>
           <td style="padding: 16px;">${ticket.tare_weight.toLocaleString()}</td>
           <td style="padding: 16px;">${ticket.net_tons.toFixed(2)}</td>
-          <td style="padding: 16px;">${ticket.third_load ? '<span class="badge success">Yes (+$10)</span>' : '-'}</td>
-          <td style="padding: 16px; text-align: right; font-weight: 600;">$${(ticket.driver_pay + ticket.bonus_pay).toFixed(2)}</td>
+          <td style="padding: 16px; text-align: right; font-weight: 600;">$${ticket.driver_pay.toFixed(2)}</td>
         `;
 
-        totalLoadPay += ticket.driver_pay;
-        totalBonusPay += ticket.bonus_pay;
+        totalPay += ticket.driver_pay;
       });
 
       document.getElementById('allTicketsCount').textContent = tickets.length;
-      document.getElementById('allTicketsLoadPay').textContent = '$' + totalLoadPay.toFixed(2);
-      document.getElementById('allTicketsBonusPay').textContent = '$' + totalBonusPay.toFixed(2);
-      document.getElementById('allTicketsTotal').textContent = '$' + (totalLoadPay + totalBonusPay).toFixed(2);
+      document.getElementById('allTicketsLoadPay').textContent = '$' + totalPay.toFixed(2);
+      document.getElementById('allTicketsTotal').textContent = '$' + totalPay.toFixed(2);
     }
 
     // Filter All Tickets
@@ -1642,7 +1602,7 @@
             const ticketDate = new Date(t.ticket_date);
             if (ticketDate.getMonth() + 1 === selectedMonth) {
               const day = ticketDate.getDate() - 1;
-              data[day] += (t.driver_pay + t.bonus_pay);
+              data[day] += t.driver_pay;
             }
           });
 
@@ -1656,7 +1616,7 @@
           
           filteredTickets.forEach(t => {
             const monthIndex = new Date(t.ticket_date).getMonth();
-            data[monthIndex] += (t.driver_pay + t.bonus_pay);
+            data[monthIndex] += t.driver_pay;
           });
 
           driverChart.options.plugins.title.text = year + ' - Monthly Earnings';
@@ -1678,7 +1638,7 @@
           allDriverTickets.forEach(t => {
             const ticketDate = new Date(t.ticket_date);
             if (ticketDate >= weekStart && ticketDate <= weekEnd) {
-              data[7 - i] += (t.driver_pay + t.bonus_pay);
+              data[7 - i] += t.driver_pay;
             }
           });
         }
@@ -1692,7 +1652,7 @@
         filteredTickets.forEach(t => {
           const monthIndex = new Date(t.ticket_date).getMonth();
           const quarter = Math.floor(monthIndex / 3);
-          data[quarter] += (t.driver_pay + t.bonus_pay);
+          data[quarter] += t.driver_pay;
         });
 
         driverChart.options.plugins.title.text = year + ' - Quarterly Earnings';
