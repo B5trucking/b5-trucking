@@ -1090,10 +1090,12 @@
     }
 
     @media print {
+      /* Default print behavior for regular pages */
       .sidebar,
       .top-bar,
       .table-actions,
-      .modal-footer {
+      .modal-footer,
+      .no-print {
         display: none !important;
       }
 
@@ -1104,6 +1106,19 @@
       .invoice-preview {
         box-shadow: none;
         border: none;
+      }
+
+      /* When printing payroll PDF */
+      body.printing-payroll > *:not(#payrollPDFContent) {
+        display: none !important;
+      }
+
+      body.printing-payroll #payrollPDFContent {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+        background: white !important;
       }
     }
   </style>
@@ -3388,7 +3403,8 @@
       // If filtering by specific driver, show only that driver
       let driversToShow = summary;
       if (filteredDriverId !== null && filteredDriverId !== 'all') {
-        driversToShow = summary.filter(d => d.driver_id === filteredDriverId);
+        // Compare as strings to handle both UUID and integer IDs
+        driversToShow = summary.filter(d => String(d.driver_id) === String(filteredDriverId));
       }
       
       if (driversToShow.length === 0) {
@@ -3490,13 +3506,12 @@
         if (driverId === 'all') {
           displayDriverSummaryCards(allDrivers, null);
         } else {
-          // Convert string to number for comparison
-          const driverIdNum = parseInt(driverId);
-          displayDriverSummaryCards(allDrivers, driverIdNum);
+          // Keep as string - could be UUID or integer
+          displayDriverSummaryCards(allDrivers, driverId);
         }
 
         // Update current filter for history
-        window.currentDriverFilter = driverId === 'all' ? 'all' : parseInt(driverId);
+        window.currentDriverFilter = driverId;
         loadPayrollHistory();
 
       } catch (err) {
@@ -3559,17 +3574,21 @@
       const startDate = document.getElementById('payrollStartDate').value;
       const endDate = document.getElementById('payrollEndDate').value;
 
+      console.log('Generate Payroll - Driver selected:', driverFilterStr);
+
       if (!startDate || !endDate) {
         alert('Please select both start and end dates');
         return;
       }
 
-      if (driverFilterStr === 'all') {
+      if (driverFilterStr === 'all' || !driverFilterStr) {
         alert('Please select a specific driver first');
         return;
       }
 
-      const driverFilter = parseInt(driverFilterStr);
+      // Validate driver ID - could be string UUID or integer
+      const driverFilter = driverFilterStr;
+      console.log('Using driver ID:', driverFilter, 'Type:', typeof driverFilter);
 
       try {
         const { data: tickets, error } = await supabaseClient
@@ -3852,8 +3871,12 @@
       }
 
       try {
+        console.log('Saving payroll for', selectedDrivers.length, 'driver(s)');
+        
         // Create separate payroll record for each driver
         for (const driver of selectedDrivers) {
+          console.log('Creating payroll for driver:', driver.driver_name);
+          
           // Create payroll record
           const { data: payrollRecord, error: payrollError } = await supabaseClient
             .from('payroll_records')
@@ -3861,12 +3884,18 @@
               period_start: startDate,
               period_end: endDate,
               total_amount: driver.total_pay,
+              paid_date: new Date().toISOString().split('T')[0], // Today's date
               notes: notes || null
             })
             .select()
             .single();
 
-          if (payrollError) throw payrollError;
+          if (payrollError) {
+            console.error('Payroll record error:', payrollError);
+            throw payrollError;
+          }
+
+          console.log('Payroll record created:', payrollRecord.id);
 
           // Create payroll item
           const { error: itemError } = await supabaseClient
@@ -3881,11 +3910,17 @@
               total_pay: driver.total_pay
             });
 
-          if (itemError) throw itemError;
+          if (itemError) {
+            console.error('Payroll item error:', itemError);
+            throw itemError;
+          }
 
+          console.log('Payroll item created for driver:', driver.driver_name);
+          
           // NO LONGER MARKING TICKETS AS PAID - Just saving the record
         }
 
+        console.log('All payroll records saved successfully');
         alert('Payroll record saved successfully!');
         
         // Clear and reload
@@ -3904,37 +3939,50 @@
       document.getElementById('payrollStartDate').value = '';
       document.getElementById('payrollEndDate').value = '';
       document.getElementById('payrollNotes').value = '';
-      document.getElementById('payrollDriverFilter').value = 'all';
       currentPayrollData = [];
     }
 
     async function loadPayrollHistory() {
       try {
+        console.log('Loading payroll history...');
+        console.log('Current driver filter:', window.currentDriverFilter);
+        
         let query = supabaseClient
           .from('payroll_items')
           .select(`
             *,
             payroll_records (*)
-          `)
-          .order('created_at', { ascending: false });
+          `);
 
         // Filter by driver if currentDriverFilter is set
         if (window.currentDriverFilter && window.currentDriverFilter !== 'all') {
+          console.log('Filtering by driver:', window.currentDriverFilter);
           query = query.eq('driver_id', window.currentDriverFilter);
         }
 
         const { data: items, error } = await query;
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error loading payroll history:', error);
+          throw error;
+        }
+
+        console.log('Payroll items loaded:', items?.length || 0);
 
         const tbody = document.getElementById('payrollHistoryTable');
         tbody.innerHTML = '';
 
         if (!items || items.length === 0) {
+          console.log('No payroll records found');
           tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">No payroll records yet</td></tr>';
           document.getElementById('payrollHistorySummary').textContent = '';
           return;
         }
+
+        console.log('Displaying', items.length, 'payroll records');
+
+        // Sort by id descending (newest first)
+        items.sort((a, b) => b.id - a.id);
 
         // Calculate summary
         const totalPaid = items.reduce((sum, item) => sum + item.total_pay, 0);
@@ -3970,7 +4018,206 @@
     }
 
     async function viewPayrollPDF(payrollId, driverName) {
-      alert('PDF generation coming soon! For now, view ticket details from the preview screen.');
+      try {
+        // Get payroll record
+        const { data: payrollRecord, error: recordError } = await supabaseClient
+          .from('payroll_records')
+          .select('*')
+          .eq('id', payrollId)
+          .single();
+
+        if (recordError) throw recordError;
+
+        // Get payroll item (driver details)
+        const { data: payrollItem, error: itemError } = await supabaseClient
+          .from('payroll_items')
+          .select('*')
+          .eq('payroll_id', payrollId)
+          .single();
+
+        if (itemError) throw itemError;
+
+        // Get all tickets for this payroll
+        const { data: tickets, error: ticketsError } = await supabaseClient
+          .from('tickets')
+          .select('*')
+          .eq('driver_id', payrollItem.driver_id)
+          .gte('ticket_date', payrollRecord.period_start)
+          .lte('ticket_date', payrollRecord.period_end)
+          .order('ticket_date', { ascending: true });
+
+        if (ticketsError) throw ticketsError;
+
+        // Generate and show PDF
+        generatePayrollPDF(payrollRecord, payrollItem, tickets);
+
+      } catch (err) {
+        console.error('Error loading payroll PDF:', err);
+        alert('Error loading payroll: ' + err.message);
+      }
+    }
+
+    function generatePayrollPDF(payrollRecord, payrollItem, tickets) {
+      // Remove any existing PDF content
+      const existing = document.getElementById('payrollPDFContent');
+      if (existing) {
+        document.body.removeChild(existing);
+      }
+
+      // Create PDF content in a div
+      const pdfContent = document.createElement('div');
+      pdfContent.id = 'payrollPDFContent';
+      pdfContent.style.position = 'fixed';
+      pdfContent.style.top = '0';
+      pdfContent.style.left = '0';
+      pdfContent.style.width = '100%';
+      pdfContent.style.height = '100%';
+      pdfContent.style.backgroundColor = 'white';
+      pdfContent.style.zIndex = '10000';
+      pdfContent.style.overflow = 'auto';
+      
+      const startDate = new Date(payrollRecord.period_start + 'T00:00:00').toLocaleDateString();
+      const endDate = new Date(payrollRecord.period_end + 'T00:00:00').toLocaleDateString();
+      const paidDate = payrollRecord.paid_date ? new Date(payrollRecord.paid_date + 'T00:00:00').toLocaleDateString() : new Date().toLocaleDateString();
+
+      pdfContent.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
+          <!-- Close Button (only visible on screen, not in print) -->
+          <div style="text-align: right; margin-bottom: 20px;">
+            <button onclick="closePayrollPDF()" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;" class="no-print">Close</button>
+            <button onclick="printPayrollPDF()" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; margin-left: 10px;" class="no-print">Print / Save PDF</button>
+          </div>
+
+          <!-- Header -->
+          <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #dc2626; padding-bottom: 20px;">
+            <div style="font-size: 48px; font-weight: 900; color: #dc2626; margin-bottom: 10px;">B5</div>
+            <div style="font-size: 24px; font-weight: 600; color: #111827;">B5 Trucking</div>
+            <div style="font-size: 14px; color: #6b7280; margin-top: 8px;">PAYROLL STATEMENT</div>
+          </div>
+
+          <!-- Driver & Period Info -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+            <div>
+              <div style="font-size: 12px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">DRIVER</div>
+              <div style="font-size: 20px; font-weight: 700; color: #111827;">${payrollItem.driver_name}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">PAY PERIOD</div>
+              <div style="font-size: 16px; font-weight: 600; color: #111827;">${startDate} - ${endDate}</div>
+              <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">Paid: ${paidDate}</div>
+            </div>
+          </div>
+
+          <!-- Summary Box -->
+          <div style="background: #fef3c7; border: 2px solid #fde68a; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; text-align: center;">
+              <div>
+                <div style="font-size: 12px; color: #92400e; font-weight: 600; margin-bottom: 6px;">TICKETS</div>
+                <div style="font-size: 28px; font-weight: 700; color: #78350f;">${payrollItem.ticket_count}</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: #92400e; font-weight: 600; margin-bottom: 6px;">BASE PAY</div>
+                <div style="font-size: 28px; font-weight: 700; color: #78350f;">$${payrollItem.base_pay.toFixed(2)}</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: #92400e; font-weight: 600; margin-bottom: 6px;">BONUS</div>
+                <div style="font-size: 28px; font-weight: 700; color: #78350f;">$${payrollItem.bonus_pay.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ticket Details Table -->
+          <div style="margin-bottom: 30px;">
+            <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Ticket Details</div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <thead>
+                <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 600; color: #6b7280;">Date</th>
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 600; color: #6b7280;">Ticket #</th>
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 600; color: #6b7280;">Truck</th>
+                  <th style="padding: 12px 8px; text-align: right; font-weight: 600; color: #6b7280;">Net Tons</th>
+                  <th style="padding: 12px 8px; text-align: right; font-weight: 600; color: #6b7280;">Base</th>
+                  <th style="padding: 12px 8px; text-align: right; font-weight: 600; color: #6b7280;">Bonus</th>
+                  <th style="padding: 12px 8px; text-align: right; font-weight: 600; color: #6b7280;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tickets.map((ticket, index) => {
+                  const ticketDate = new Date(ticket.ticket_date + 'T00:00:00').toLocaleDateString();
+                  const basePay = ticket.driver_pay || 0;
+                  const bonusPay = ticket.bonus_pay || 0;
+                  const total = basePay + bonusPay;
+                  const rowBg = index % 2 === 0 ? '#ffffff' : '#f9fafb';
+                  
+                  return `
+                    <tr style="background: ${rowBg}; border-bottom: 1px solid #e5e7eb;">
+                      <td style="padding: 10px 8px;">${ticketDate}</td>
+                      <td style="padding: 10px 8px;">${ticket.ticket_number}</td>
+                      <td style="padding: 10px 8px;">${ticket.truck_number}</td>
+                      <td style="padding: 10px 8px; text-align: right;">${ticket.net_tons.toFixed(2)}</td>
+                      <td style="padding: 10px 8px; text-align: right;">$${basePay.toFixed(2)}</td>
+                      <td style="padding: 10px 8px; text-align: right;">${bonusPay > 0 ? '$' + bonusPay.toFixed(2) : '-'}</td>
+                      <td style="padding: 10px 8px; text-align: right; font-weight: 600;">$${total.toFixed(2)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+              <tfoot>
+                <tr style="background: #f9fafb; border-top: 2px solid #dc2626;">
+                  <td colspan="4" style="padding: 14px 8px; font-weight: 700; color: #111827;">TOTAL</td>
+                  <td style="padding: 14px 8px; text-align: right; font-weight: 700; color: #111827;">$${payrollItem.base_pay.toFixed(2)}</td>
+                  <td style="padding: 14px 8px; text-align: right; font-weight: 700; color: #111827;">$${payrollItem.bonus_pay.toFixed(2)}</td>
+                  <td style="padding: 14px 8px; text-align: right; font-weight: 700; color: #dc2626; font-size: 16px;">$${payrollItem.total_pay.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Total Pay Box -->
+          <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; border-radius: 12px; padding: 24px; text-align: center;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; opacity: 0.9;">TOTAL PAYMENT</div>
+            <div style="font-size: 42px; font-weight: 800; letter-spacing: -1px;">$${payrollItem.total_pay.toFixed(2)}</div>
+          </div>
+
+          ${payrollRecord.notes ? `
+          <!-- Notes -->
+          <div style="margin-top: 30px; padding: 16px; background: #f9fafb; border-left: 4px solid #dc2626; border-radius: 4px;">
+            <div style="font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 6px;">NOTES</div>
+            <div style="font-size: 14px; color: #111827;">${payrollRecord.notes}</div>
+          </div>
+          ` : ''}
+
+          <!-- Footer -->
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 11px;">
+            <div>B5 Trucking | Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+          </div>
+        </div>
+
+        <style>
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+          }
+        </style>
+      `;
+
+      // Add to document and set body class
+      document.body.appendChild(pdfContent);
+      document.body.classList.add('printing-payroll');
+    }
+
+    function closePayrollPDF() {
+      const pdfContent = document.getElementById('payrollPDFContent');
+      if (pdfContent) {
+        document.body.removeChild(pdfContent);
+      }
+      document.body.classList.remove('printing-payroll');
+    }
+
+    function printPayrollPDF() {
+      // Trigger print dialog
+      window.print();
     }
 
     async function unpayPayroll(payrollId, driverName, ticketCount) {
@@ -4193,8 +4440,9 @@
             const ticketDate = new Date(t.ticket_date);
             if (ticketDate.getMonth() + 1 === selectedMonth) {
               const day = ticketDate.getDate() - 1; // 0-indexed
-              // Scale to client rate ($500 per ticket)
-              data[day] += 500;
+              // Use actual ticket revenue (gross_tons * rate)
+              const ticketRevenue = (t.gross_tons || 0) * (t.rate || 0);
+              data[day] += ticketRevenue;
             }
           });
 
@@ -4209,8 +4457,9 @@
           filteredTickets.forEach(t => {
             const ticketDate = new Date(t.ticket_date);
             const monthIndex = ticketDate.getMonth();
-            // Scale to client rate ($500 per ticket)
-            data[monthIndex] += 500;
+            // Use actual ticket revenue (gross_tons * rate)
+            const ticketRevenue = (t.gross_tons || 0) * (t.rate || 0);
+            data[monthIndex] += ticketRevenue;
           });
 
           revenueChart.options.plugins.title.text = year + ' - Monthly Revenue';
@@ -4232,7 +4481,9 @@
           filteredTickets.forEach(t => {
             const ticketDate = new Date(t.ticket_date);
             if (ticketDate >= weekStart && ticketDate <= weekEnd) {
-              data[7 - i] += 500; // Scale to client rate
+              // Use actual ticket revenue (gross_tons * rate)
+              const ticketRevenue = (t.gross_tons || 0) * (t.rate || 0);
+              data[7 - i] += ticketRevenue;
             }
           });
         }
@@ -4247,7 +4498,9 @@
           const ticketDate = new Date(t.ticket_date);
           const monthIndex = ticketDate.getMonth();
           const quarter = Math.floor(monthIndex / 3);
-          data[quarter] += 500; // Scale to client rate
+          // Use actual ticket revenue (gross_tons * rate)
+          const ticketRevenue = (t.gross_tons || 0) * (t.rate || 0);
+          data[quarter] += ticketRevenue;
         });
 
         revenueChart.options.plugins.title.text = year + ' - Quarterly Revenue';
