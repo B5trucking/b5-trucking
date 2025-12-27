@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -4381,6 +4380,13 @@
     let revenueChart = null;
 
     function initializeRevenueChart(chartType = 'line') {
+      // Destroy existing chart if it exists
+      if (revenueChart) {
+        console.log('Destroying existing chart');
+        revenueChart.destroy();
+        revenueChart = null;
+      }
+
       const ctx = document.getElementById('revenueChart').getContext('2d');
       
       // Start with empty data - will be populated by updateRevenueChart
@@ -4474,9 +4480,12 @@
     }
 
     function updateRevenueChart() {
+      console.log('=== updateRevenueChart called ===');
+      console.log('All invoices:', allInvoices?.length || 0);
+      
       // If no invoices loaded yet, show zeros
       if (!allInvoices || allInvoices.length === 0) {
-        console.log('No invoices loaded yet');
+        console.log('No invoices loaded yet - showing zeros');
         document.getElementById('chartTotalRevenue').textContent = '$0';
         document.getElementById('chartTotalTickets').textContent = '0';
         document.getElementById('chartAvgPerTicket').textContent = '$0';
@@ -4487,6 +4496,8 @@
       const year = parseInt(document.getElementById('chartFilterYear').value);
       const view = document.getElementById('chartFilterView').value;
       const month = document.getElementById('chartFilterMonth').value;
+
+      console.log('Chart filters - Year:', year, 'View:', view, 'Month:', month, 'Driver:', driver);
 
       console.log('Updating chart with', allInvoices.length, 'total invoices');
 
