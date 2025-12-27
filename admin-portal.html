@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1123,6 +1124,7 @@
           class="form-input" 
           placeholder="Enter username"
           autocomplete="username"
+          onkeypress="if(event.key === 'Enter') adminLogin()"
         />
       </div>
 
@@ -1134,10 +1136,11 @@
           class="form-input" 
           placeholder="Enter password"
           autocomplete="current-password"
+          onkeypress="if(event.key === 'Enter') adminLogin()"
         />
       </div>
       
-      <button class="btn btn-primary" onclick="adminLogin()" style="width: 100%;">Sign In</button>
+      <button class="btn btn-primary" onclick="adminLogin()" id="adminLoginBtn" style="width: 100%;">Sign In</button>
       
       <div id="adminErrorMsg" class="error-msg">
         ⚠️ Invalid credentials. Please try again.
@@ -1748,7 +1751,7 @@
 
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
               <button class="btn btn-secondary" onclick="cancelPayroll()" style="padding: 12px 24px;">Cancel</button>
-              <button class="btn btn-primary" onclick="savePayroll()" style="padding: 12px 24px; font-weight: 600;">Mark Selected as Paid</button>
+              <button class="btn btn-primary" onclick="savePayroll()" style="padding: 12px 24px; font-weight: 600;">Save Payroll Record</button>
             </div>
           </div>
         </div>
@@ -2207,19 +2210,51 @@
   </div>
 
   <script>
-    // Initialize Supabase
-    const SUPABASE_URL = 'https://jnytbgbevfyfqpjsdwiv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpueXRiZ2JldmZ5ZnFwanNkd2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2ODQ5NzAsImV4cCI6MjA4MjI2MDk3MH0.3MNnntapdLT7TLAjwftHVQQ8Wir75OlAQ8wteifhiUM';
-    
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Wait for Supabase to load
+    function initializeSupabase() {
+      if (!window.supabase) {
+        console.error('Supabase library not loaded! Retrying...');
+        setTimeout(initializeSupabase, 100);
+        return;
+      }
+
+      console.log('Supabase library loaded successfully');
+      
+      // Initialize Supabase
+      const SUPABASE_URL = 'https://jnytbgbevfyfqpjsdwiv.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpueXRiZ2JldmZ5ZnFwanNkd2l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2ODQ5NzAsImV4cCI6MjA4MjI2MDk3MH0.3MNnntapdLT7TLAjwftHVQQ8Wir75OlAQ8wteifhiUM';
+      
+      window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      supabaseClient = window.supabaseClient; // Set alias
+      console.log('Supabase client initialized');
+      
+      // Try to restore session after Supabase is ready
+      restoreAdminSession();
+    }
+
+    // Start initialization when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeSupabase);
+    } else {
+      initializeSupabase();
+    }
 
     let allTickets = [];
     let allDrivers = [];
+    
+    // Alias for compatibility
+    let supabaseClient;
 
     // Admin Login
     async function adminLogin() {
       const username = document.getElementById('adminUsername').value;
       const password = document.getElementById('adminPassword').value;
+
+      // Check if Supabase is ready
+      if (!window.supabaseClient) {
+        alert('System is still loading, please wait a moment and try again.');
+        return;
+      }
 
       // Simple validation - TODO: Add proper Supabase authentication later
       if (username === 'Bridger' && password === 'Gandalf17') {
@@ -2641,13 +2676,10 @@
           }
         });
       }
-
-      // Check for existing admin session
-      checkAdminSession();
     });
 
-    // Check if admin is already logged in
-    async function checkAdminSession() {
+    // Check if admin is already logged in (called after Supabase is ready)
+    async function restoreAdminSession() {
       const session = localStorage.getItem('b5_admin_session');
       
       if (session) {
@@ -2784,7 +2816,8 @@
           .insert({
             name: name,
             driver_code: code,
-            status: status
+            status: status,
+            is_active: status === 'active'  // Set is_active based on status
           })
           .select()
           .single();
@@ -3263,25 +3296,42 @@
     let currentPayrollData = [];
     window.currentDriverFilter = 'all';
 
-    // Load unpaid tickets summary
+    // Load ticket summary for all drivers
     async function loadUnpaidSummary() {
       try {
-        // Get all active drivers
-        const { data: drivers, error: driversError } = await supabaseClient
-          .from('drivers')
-          .select('*')
-          .eq('is_active', true)
-          .order('driver_name', { ascending: true });
+        console.log('Loading active drivers...');
+        
+        // Get all drivers (try with is_active filter first, fallback to all if column doesn't exist)
+        let driversQuery = supabaseClient.from('drivers').select('*');
+        
+        // Try to filter by is_active if column exists
+        // We'll use a try-catch in case the column doesn't exist yet
+        const { data: drivers, error: driversError } = await driversQuery;
 
-        if (driversError) throw driversError;
+        if (driversError) {
+          console.error('Error loading drivers:', driversError);
+          throw driversError;
+        }
 
-        // Get unpaid tickets
+        console.log('Active drivers loaded:', drivers);
+        
+        // Debug: Show what columns we have
+        if (drivers && drivers.length > 0) {
+          console.log('Driver columns:', Object.keys(drivers[0]));
+          console.log('First driver sample:', drivers[0]);
+        }
+
+        // Get all tickets
         const { data: tickets, error: ticketsError } = await supabaseClient
           .from('tickets')
-          .select('*')
-          .eq('paid', false);
+          .select('*');
 
-        if (ticketsError) throw ticketsError;
+        if (ticketsError) {
+          console.error('Error loading tickets:', ticketsError);
+          throw ticketsError;
+        }
+
+        console.log('Tickets loaded:', tickets?.length || 0);
 
         // Group tickets by driver
         const driverMap = {};
@@ -3298,21 +3348,37 @@
           driverMap[ticket.driver_id].total += (ticket.driver_pay + ticket.bonus_pay);
         });
 
-        const unpaidSummary = Object.values(driverMap);
+        const ticketSummary = Object.values(driverMap);
         
-        // Populate main driver filter with ALL active drivers
+        // Populate main driver filter with ALL drivers
         const mainFilter = document.getElementById('mainDriverFilter');
         
+        if (!mainFilter) {
+          console.error('mainDriverFilter element not found!');
+          return;
+        }
+
+        if (!drivers || drivers.length === 0) {
+          console.warn('No drivers found');
+          mainFilter.innerHTML = '<option value="all">All Drivers</option><option disabled>No drivers found</option>';
+          displayDriverSummaryCards([]);
+          return;
+        }
+        
+        // Use 'name' column (confirmed from database)
         const driverOptions = drivers.map(d => 
-          `<option value="${d.id}">${d.driver_name}</option>`
+          `<option value="${d.id}">${d.name}</option>`
         ).join('');
         mainFilter.innerHTML = '<option value="all">All Drivers</option>' + driverOptions;
 
-        // Create summary cards (only drivers with unpaid tickets)
-        displayDriverSummaryCards(unpaidSummary);
+        console.log('Driver dropdown populated with', drivers.length, 'drivers');
+
+        // Create summary cards
+        displayDriverSummaryCards(ticketSummary);
 
       } catch (err) {
-        console.error('Error loading unpaid summary:', err);
+        console.error('Error loading ticket summary:', err);
+        alert('Error loading drivers: ' + err.message);
       }
     }
 
@@ -3328,9 +3394,9 @@
       if (driversToShow.length === 0) {
         container.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 60px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 20px; border: none;">
-            <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
-            <div style="font-size: 18px; font-weight: 600; color: #15803d; margin-bottom: 6px;">All Paid Up!</div>
-            <div style="font-size: 14px; color: #16a34a;">No unpaid tickets for this driver</div>
+            <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+            <div style="font-size: 18px; font-weight: 600; color: #15803d; margin-bottom: 6px;">No Tickets Yet</div>
+            <div style="font-size: 14px; color: #16a34a;">This driver has no tickets in the system</div>
           </div>
         `;
         return;
@@ -3353,7 +3419,7 @@
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
               <div>
                 <div style="font-size: 19px; font-weight: 700; color: ${color.text}; margin-bottom: 6px;">${d.driver_name}</div>
-                <div style="font-size: 13px; color: ${color.text}; opacity: 0.7;">Unpaid Balance</div>
+                <div style="font-size: 13px; color: ${color.text}; opacity: 0.7;">Total Tickets</div>
               </div>
               <div style="background: ${color.badge}; color: white; padding: 6px 14px; border-radius: 12px; font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
                 ${d.count} ${d.count === 1 ? 'Ticket' : 'Tickets'}
@@ -3511,7 +3577,6 @@
           .select('*')
           .gte('ticket_date', startDate)
           .lte('ticket_date', endDate)
-          .eq('paid', false)
           .eq('driver_id', driverFilter)
           .order('ticket_date', { ascending: true });
 
@@ -3769,7 +3834,7 @@
       const selectedDrivers = currentPayrollData.filter(d => d.selected);
       
       if (selectedDrivers.length === 0) {
-        alert('Please select at least one driver to pay');
+        alert('Please select at least one driver');
         return;
       }
 
@@ -3782,7 +3847,7 @@
 
       const driverNames = selectedDrivers.map(d => d.driver_name).join(', ');
 
-      if (!confirm(`Mark payroll as paid?\n\n${selectedDrivers.length} driver(s): ${driverNames}\n${totalTickets} tickets = $${totalAmount.toFixed(2)}\n\nThis will mark all their tickets in this period as PAID.`)) {
+      if (!confirm(`Save payroll record?\n\n${selectedDrivers.length} driver(s): ${driverNames}\n${totalTickets} tickets = $${totalAmount.toFixed(2)}\n\nThis will create a payroll PDF record for your records.`)) {
         return;
       }
 
@@ -3818,24 +3883,13 @@
 
           if (itemError) throw itemError;
 
-          // Mark tickets as paid
-          const ticketIds = driver.tickets.map(t => t.id);
-          const { error: updateError } = await supabaseClient
-            .from('tickets')
-            .update({ 
-              paid: true,
-              payroll_id: payrollRecord.id
-            })
-            .in('id', ticketIds);
-
-          if (updateError) throw updateError;
+          // NO LONGER MARKING TICKETS AS PAID - Just saving the record
         }
 
-        alert('Payroll saved successfully!');
+        alert('Payroll record saved successfully!');
         
         // Clear and reload
         cancelPayroll();
-        await loadAllData();
         loadPayrollHistory();
         loadUnpaidSummary();
 
@@ -3904,7 +3958,6 @@
             <td style="text-align: center;">
               <div style="display: flex; gap: 6px; justify-content: center;">
                 <button class="btn btn-secondary" onclick="viewPayrollPDF('${record.id}', '${item.driver_name}')" style="padding: 6px 10px; font-size: 11px;" title="View PDF">📄</button>
-                <button class="btn btn-secondary" onclick="unpayPayroll('${record.id}', '${item.driver_name}', ${item.ticket_count})" style="padding: 6px 10px; font-size: 11px; background: #fef3c7; border-color: #fde68a; color: #92400e;" title="Reverse/Unpay">🔄</button>
                 <button class="btn btn-secondary" onclick="deletePayroll('${record.id}', '${item.driver_name}')" style="padding: 6px 10px; font-size: 11px; background: #fee2e2; border-color: #fecaca; color: #991b1b;" title="Delete">🗑</button>
               </div>
             </td>
@@ -3958,7 +4011,7 @@
     }
 
     async function deletePayroll(payrollId, driverName) {
-      if (!confirm(`DELETE payroll record for ${driverName}?\n\nWARNING: The tickets will remain marked as PAID. Use "Reverse" instead if you want to unpay them.\n\nAre you sure?`)) {
+      if (!confirm(`Delete payroll record for ${driverName}?\n\nThis will permanently remove this record from your payroll history.\n\nAre you sure?`)) {
         return;
       }
 
