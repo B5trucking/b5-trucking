@@ -1108,8 +1108,10 @@
         border: none;
       }
 
-      /* When printing payroll PDF */
-      body.printing-payroll > *:not(#payrollPDFContent) {
+      /* When printing payroll PDF - hide everything except PDF */
+      body.printing-payroll .sidebar,
+      body.printing-payroll .main-content,
+      body.printing-payroll .top-bar {
         display: none !important;
       }
 
@@ -1119,6 +1121,18 @@
         width: 100% !important;
         height: auto !important;
         background: white !important;
+        overflow: visible !important;
+        z-index: 1 !important;
+      }
+
+      body.printing-payroll #payrollPDFWrapper {
+        display: block !important;
+        max-width: 100% !important;
+        padding: 20px !important;
+      }
+
+      @page {
+        margin: 0.5in;
       }
     }
   </style>
@@ -4081,11 +4095,11 @@
       const paidDate = payrollRecord.paid_date ? new Date(payrollRecord.paid_date + 'T00:00:00').toLocaleDateString() : new Date().toLocaleDateString();
 
       pdfContent.innerHTML = `
-        <div style="font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
+        <div id="payrollPDFWrapper" style="font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; background: white;">
           <!-- Close Button (only visible on screen, not in print) -->
-          <div style="text-align: right; margin-bottom: 20px;">
-            <button onclick="closePayrollPDF()" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;" class="no-print">Close</button>
-            <button onclick="printPayrollPDF()" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; margin-left: 10px;" class="no-print">Print / Save PDF</button>
+          <div style="text-align: right; margin-bottom: 20px;" class="no-print">
+            <button onclick="closePayrollPDF()" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">Close</button>
+            <button onclick="printPayrollPDF()" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; margin-left: 10px;">Print / Save PDF</button>
           </div>
 
           <!-- Header -->
@@ -4216,8 +4230,54 @@
     }
 
     function printPayrollPDF() {
-      // Trigger print dialog
-      window.print();
+      // Get the PDF content
+      const pdfWrapper = document.getElementById('payrollPDFWrapper');
+      if (!pdfWrapper) return;
+
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>B5 Trucking - Payroll Statement</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: white;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th, td {
+              padding: 8px;
+              text-align: left;
+            }
+            @media print {
+              @page {
+                margin: 0.5in;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${pdfWrapper.innerHTML}
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Wait for content to load, then print
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 250);
     }
 
     async function unpayPayroll(payrollId, driverName, ticketCount) {
