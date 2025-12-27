@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1385,122 +1386,6 @@
         </div>
       </section>
 
-      <!-- PAYROLL SECTION -->
-      <section id="payroll" class="section">
-        <div class="page-header">
-          <h1 class="page-title">Payroll</h1>
-          <p class="page-subtitle">Manage driver payments</p>
-        </div>
-
-        <!-- Payroll Generator -->
-        <div class="form-card">
-          <h2 class="card-title">Generate Payroll</h2>
-          
-          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <svg width="20" height="20" fill="#3b82f6" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-              </svg>
-              <span style="font-weight: 600; color: #1e40af;">Suggested Pay Period (2 weeks behind)</span>
-            </div>
-            <div style="color: #1e3a8a; font-size: 14px; margin-bottom: 12px;" id="suggestedPeriod">Dec 9-15, 2025</div>
-            <button class="btn btn-secondary" onclick="useSuggestedDates()" style="background: #3b82f6; color: white; border-color: #2563eb;">
-              Use Suggested Dates
-            </button>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label">Start Date</label>
-              <input type="date" class="form-input" id="payrollStartDate">
-            </div>
-            <div class="form-group">
-              <label class="form-label">End Date</label>
-              <input type="date" class="form-input" id="payrollEndDate">
-            </div>
-            <div class="form-group" style="display: flex; align-items: flex-end;">
-              <button class="btn btn-primary" onclick="generatePayroll()" style="width: 100%; height: 44px;">
-                Generate Payroll
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Payroll Preview -->
-        <div id="payrollPreviewArea" style="display: none;">
-          <div class="form-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-              <div>
-                <h2 class="card-title" style="margin: 0;">Payroll Preview</h2>
-                <p style="color: var(--text-muted); font-size: 14px; margin: 4px 0 0 0;">Period: <span id="payrollPeriodDisplay"></span></p>
-              </div>
-            </div>
-
-            <div style="overflow-x: auto; margin-bottom: 20px;">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width: 50px;">Pay?</th>
-                    <th>Driver Name</th>
-                    <th style="text-align: center;">Loads</th>
-                    <th style="text-align: right;">Base Pay</th>
-                    <th style="text-align: right;">Bonus</th>
-                    <th style="text-align: right;">Total Pay</th>
-                    <th style="width: 100px;">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="payrollTableBody">
-                </tbody>
-                <tfoot style="background: #fafafa; font-weight: 600;">
-                  <tr>
-                    <td></td>
-                    <td>TOTAL</td>
-                    <td style="text-align: center;" id="payrollTotalLoads">0</td>
-                    <td style="text-align: right;" id="payrollTotalBase">$0.00</td>
-                    <td style="text-align: right;" id="payrollTotalBonus">$0.00</td>
-                    <td style="text-align: right; color: var(--brand-primary);" id="payrollGrandTotal">$0.00</td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Notes (optional)</label>
-              <textarea class="form-input" id="payrollNotes" rows="2" placeholder="e.g., Week of 12/9 - Holiday bonus included"></textarea>
-            </div>
-
-            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
-              <button class="btn btn-secondary" onclick="cancelPayroll()">Cancel</button>
-              <button class="btn btn-primary" onclick="savePayroll()">Mark Selected as Paid</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Payroll History -->
-        <div class="table-container" style="margin-top: 32px;">
-          <div class="table-header">
-            <h2 class="table-title">Payroll History</h2>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Period</th>
-                <th>Paid On</th>
-                <th style="text-align: center;">Drivers</th>
-                <th style="text-align: right;">Total Paid</th>
-                <th style="text-align: center;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="payrollHistoryTable">
-              <tr>
-                <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">No payroll records yet</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
       <!-- TICKETS SECTION -->
       <section id="tickets" class="section">
         <div class="page-header">
@@ -1736,6 +1621,166 @@
       </section>
 
       <!-- PAYROLL SECTION -->
+      <section id="payroll" class="section">
+        <div class="page-header">
+          <h1 class="page-title">Payroll</h1>
+          <p class="page-subtitle">Manage driver payments</p>
+        </div>
+
+        <!-- Driver Filter -->
+        <div class="form-card" style="background: white; padding: 32px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+              <h2 style="color: #111827; margin: 0 0 6px 0; font-size: 20px; font-weight: 600;">Filter by Driver</h2>
+              <p style="color: #6b7280; margin: 0; font-size: 14px;">View payroll for a specific driver or all drivers</p>
+            </div>
+            <button class="btn btn-secondary" onclick="showAllDrivers()" style="padding: 10px 20px; font-size: 14px;">
+              View All
+            </button>
+          </div>
+          <select class="form-select" id="mainDriverFilter" onchange="filterByDriver()" style="font-size: 15px; padding: 14px; background: #f9fafb; border: 1px solid #e5e7eb; cursor: pointer;">
+            <option value="all">All Drivers</option>
+          </select>
+        </div>
+
+        <!-- Driver Summary Cards -->
+        <div id="driverSummaryCards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px;">
+          <div style="grid-column: 1 / -1; text-align: center; padding: 60px; background: #fafafa; border-radius: 20px; border: 2px dashed #e5e7eb;">
+            <div style="font-size: 14px; color: #9ca3af;">Loading driver data...</div>
+          </div>
+        </div>
+
+        <!-- Payroll Generator -->
+        <div class="form-card" style="background: white; padding: 32px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+              <h2 style="color: #111827; margin: 0 0 6px 0; font-size: 20px; font-weight: 600;">Generate Payroll</h2>
+              <p style="color: #6b7280; margin: 0; font-size: 14px;">Select date range and driver to create payroll</p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn btn-secondary" onclick="setLastWeek()" style="padding: 8px 16px; font-size: 13px; background: #f3f4f6; border: 1px solid #e5e7eb; color: #374151;">Last Week</button>
+              <button class="btn btn-secondary" onclick="setTwoWeeksAgo()" style="padding: 8px 16px; font-size: 13px; background: #f3f4f6; border: 1px solid #e5e7eb; color: #374151;">2 Weeks Ago</button>
+              <button class="btn btn-secondary" onclick="setThisMonth()" style="padding: 8px 16px; font-size: 13px; background: #f3f4f6; border: 1px solid #e5e7eb; color: #374151;">This Month</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div class="form-group">
+              <label class="form-label" style="color: #374151; font-weight: 500; font-size: 13px;">Start Date</label>
+              <input type="date" class="form-input" id="payrollStartDate" style="background: #f9fafb; border: 1px solid #e5e7eb;">
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="color: #374151; font-weight: 500; font-size: 13px;">End Date</label>
+              <input type="date" class="form-input" id="payrollEndDate" style="background: #f9fafb; border: 1px solid #e5e7eb;">
+            </div>
+          </div>
+          
+          <button class="btn btn-primary" onclick="generatePayroll()" id="generatePayrollBtn" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600;" disabled>
+            Generate Payroll
+          </button>
+        </div>
+
+        <!-- Payroll Preview -->
+        <div id="payrollPreviewArea" style="display: none;">
+          <div class="form-card" style="background: white; padding: 32px;">
+            <div style="margin-bottom: 24px;">
+              <h2 style="color: #111827; margin: 0 0 6px 0; font-size: 20px; font-weight: 600;">Payroll Preview</h2>
+              <p style="color: #6b7280; margin: 0; font-size: 14px;">Period: <span id="payrollPeriodDisplay"></span></p>
+            </div>
+
+            <div style="overflow-x: auto; margin-bottom: 24px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">Pay?</th>
+                    <th>Driver Name</th>
+                    <th style="text-align: center;">Tickets</th>
+                    <th style="text-align: right;">Base Pay</th>
+                    <th style="text-align: right;">Bonus</th>
+                    <th style="text-align: right;">Total Pay</th>
+                    <th style="width: 100px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="payrollTableBody">
+                </tbody>
+                <tfoot style="background: #f9fafb; font-weight: 600;">
+                  <tr>
+                    <td></td>
+                    <td>TOTAL</td>
+                    <td style="text-align: center;" id="payrollTotalTickets">0</td>
+                    <td style="text-align: right;" id="payrollTotalBase">$0.00</td>
+                    <td style="text-align: right;" id="payrollTotalBonus">$0.00</td>
+                    <td style="text-align: right; color: var(--brand-primary);" id="payrollGrandTotal">$0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Expandable Ticket List for Editing -->
+            <div style="margin-bottom: 24px;">
+              <button class="btn btn-secondary" onclick="toggleTicketList()" id="toggleTicketListBtn" style="width: 100%; padding: 12px; font-size: 14px; background: #f3f4f6; border: 1px solid #e5e7eb; color: #374151;">
+                <span id="ticketListBtnText">▼ View & Edit Individual Tickets</span>
+              </button>
+              <div id="individualTicketsList" style="display: none; margin-top: 16px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+                <table>
+                  <thead style="background: #f9fafb;">
+                    <tr>
+                      <th>Date</th>
+                      <th>Ticket #</th>
+                      <th>Truck</th>
+                      <th style="text-align: right;">Net Tons</th>
+                      <th style="text-align: right;">Base Pay</th>
+                      <th style="text-align: right;">Bonus</th>
+                      <th style="text-align: right;">Total</th>
+                      <th style="width: 140px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="individualTicketsBody">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="color: #374151; font-weight: 500; font-size: 13px;">Notes (optional)</label>
+              <textarea class="form-input" id="payrollNotes" rows="2" placeholder="e.g., Week of 12/9 - Regular weekly pay" style="background: #f9fafb; border: 1px solid #e5e7eb;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+              <button class="btn btn-secondary" onclick="cancelPayroll()" style="padding: 12px 24px;">Cancel</button>
+              <button class="btn btn-primary" onclick="savePayroll()" style="padding: 12px 24px; font-weight: 600;">Mark Selected as Paid</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payroll History -->
+        <div class="table-container" style="margin-top: 32px;">
+          <div class="table-header">
+            <h2 class="table-title" style="font-size: 20px; font-weight: 600; color: #111827;">Payroll History <span id="payrollHistoryFilter" style="font-weight: normal; font-size: 14px; color: #6b7280;"></span></h2>
+            <div id="payrollHistorySummary" style="font-size: 14px; color: #6b7280;"></div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Driver</th>
+                <th>Paid On</th>
+                <th style="text-align: center;">Tickets</th>
+                <th style="text-align: right;">Total Paid</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="payrollHistoryTable">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">No payroll records yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TICKETS SECTION -->
       <section id="payroll" class="section">
         <div class="page-header">
           <h1 class="page-title">Payroll</h1>
@@ -2121,6 +2166,47 @@
     </div>
   </div>
 
+  <!-- PAYROLL TICKET DETAILS MODAL -->
+  <div id="payrollTicketDetailsModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="ticketDetailsTitle">Ticket Details</h2>
+        <button class="modal-close" onclick="closeTicketDetailsModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Ticket #</th>
+                <th>Truck</th>
+                <th style="text-align: right;">Net Tons</th>
+                <th style="text-align: right;">Base Pay</th>
+                <th style="text-align: right;">Bonus</th>
+                <th style="text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody id="ticketDetailsBody">
+            </tbody>
+            <tfoot style="background: #fafafa; font-weight: 600;">
+              <tr>
+                <td colspan="4">TOTAL</td>
+                <td style="text-align: right;" id="detailsBasePay">$0.00</td>
+                <td style="text-align: right;" id="detailsBonusPay">$0.00</td>
+                <td style="text-align: right; color: var(--brand-primary);" id="detailsTotalPay">$0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeTicketDetailsModal()">Close</button>
+        <button class="btn btn-primary" onclick="printTicketDetails()">Print</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Initialize Supabase
     const SUPABASE_URL = 'https://jnytbgbevfyfqpjsdwiv.supabase.co';
@@ -2167,8 +2253,8 @@
           }, 100);
 
           // Initialize payroll
-          updateSuggestedDates();
           loadPayrollHistory();
+          loadUnpaidSummary();
 
         } catch (err) {
           console.error('Error loading data:', err);
@@ -2219,8 +2305,8 @@
         loadInvoicesList();
 
         // Initialize payroll
-        updateSuggestedPeriod();
         loadPayrollHistory();
+        loadUnpaidSummary();
 
       } catch (err) {
         console.error('Error loading data:', err);
@@ -2595,8 +2681,8 @@
             }, 100);
 
             // Initialize payroll
-            updateSuggestedPeriod();
             loadPayrollHistory();
+            loadUnpaidSummary();
           } else {
             // Session expired - clear it
             localStorage.removeItem('b5_admin_session');
@@ -3176,40 +3262,223 @@
     // ============================================
 
     let currentPayrollData = [];
+    window.currentDriverFilter = 'all';
 
-    // Update suggested period (2 weeks behind)
-    function updateSuggestedPeriod() {
+    // Load unpaid tickets summary
+    async function loadUnpaidSummary() {
+      try {
+        const { data: tickets, error } = await supabaseClient
+          .from('tickets')
+          .select('*')
+          .eq('paid', false);
+
+        if (error) throw error;
+
+        // Group by driver
+        const driverMap = {};
+        tickets?.forEach(ticket => {
+          if (!driverMap[ticket.driver_id]) {
+            driverMap[ticket.driver_id] = {
+              driver_id: ticket.driver_id,
+              driver_name: ticket.driver_name,
+              count: 0,
+              total: 0
+            };
+          }
+          driverMap[ticket.driver_id].count++;
+          driverMap[ticket.driver_id].total += (ticket.driver_pay + ticket.bonus_pay);
+        });
+
+        const summary = Object.values(driverMap);
+        
+        // Populate main driver filter
+        const mainFilter = document.getElementById('mainDriverFilter');
+        
+        const driverOptions = summary.map(d => `<option value="${d.driver_id}">${d.driver_name}</option>`).join('');
+        mainFilter.innerHTML = '<option value="all">All Drivers</option>' + driverOptions;
+
+        // Create summary cards
+        displayDriverSummaryCards(summary);
+
+      } catch (err) {
+        console.error('Error loading unpaid summary:', err);
+      }
+    }
+
+    function displayDriverSummaryCards(summary, filteredDriverId = null) {
+      const container = document.getElementById('driverSummaryCards');
+      
+      // If filtering by specific driver, show only that driver
+      let driversToShow = summary;
+      if (filteredDriverId !== null && filteredDriverId !== 'all') {
+        driversToShow = summary.filter(d => d.driver_id === filteredDriverId);
+      }
+      
+      if (driversToShow.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 60px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 20px; border: none;">
+            <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
+            <div style="font-size: 18px; font-weight: 600; color: #15803d; margin-bottom: 6px;">All Paid Up!</div>
+            <div style="font-size: 14px; color: #16a34a;">No unpaid tickets for this driver</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Pastel color palette
+      const colors = [
+        { bg: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', text: '#92400e', badge: '#f59e0b' },
+        { bg: 'linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%)', text: '#5b21b6', badge: '#8b5cf6' },
+        { bg: 'linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)', text: '#1e40af', badge: '#3b82f6' },
+        { bg: 'linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%)', text: '#9f1239', badge: '#ec4899' }
+      ];
+
+      container.innerHTML = driversToShow.map((d, index) => {
+        const color = colors[index % colors.length];
+        return `
+          <div style="background: ${color.bg}; border: none; border-radius: 24px; padding: 28px; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" 
+               onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.12)'" 
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+              <div>
+                <div style="font-size: 19px; font-weight: 700; color: ${color.text}; margin-bottom: 6px;">${d.driver_name}</div>
+                <div style="font-size: 13px; color: ${color.text}; opacity: 0.7;">Unpaid Balance</div>
+              </div>
+              <div style="background: ${color.badge}; color: white; padding: 6px 14px; border-radius: 12px; font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                ${d.count} ${d.count === 1 ? 'Ticket' : 'Tickets'}
+              </div>
+            </div>
+            <div style="font-size: 36px; font-weight: 800; color: ${color.text}; margin-bottom: 0; letter-spacing: -0.02em;">$${d.total.toFixed(2)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Filter entire payroll page by driver
+    function filterByDriver() {
+      const driverId = document.getElementById('mainDriverFilter').value;
+      
+      // Enable/disable generate button based on driver selection
+      const generateBtn = document.getElementById('generatePayrollBtn');
+      if (driverId === 'all') {
+        generateBtn.disabled = true;
+        generateBtn.style.opacity = '0.5';
+        generateBtn.style.cursor = 'not-allowed';
+      } else {
+        generateBtn.disabled = false;
+        generateBtn.style.opacity = '1';
+        generateBtn.style.cursor = 'pointer';
+      }
+      
+      // Filter cards and history
+      updateDriverDisplay(driverId);
+      
+      // Update history header
+      if (driverId === 'all') {
+        document.getElementById('payrollHistoryFilter').textContent = '';
+      } else {
+        const driverName = document.getElementById('mainDriverFilter').selectedOptions[0].text;
+        document.getElementById('payrollHistoryFilter').textContent = `- ${driverName}`;
+      }
+    }
+
+    async function updateDriverDisplay(driverId) {
+      try {
+        // Get unpaid tickets
+        const { data: tickets, error } = await supabaseClient
+          .from('tickets')
+          .select('*')
+          .eq('paid', false);
+
+        if (error) throw error;
+
+        // Group by driver
+        const driverMap = {};
+        tickets?.forEach(ticket => {
+          if (!driverMap[ticket.driver_id]) {
+            driverMap[ticket.driver_id] = {
+              driver_id: ticket.driver_id,
+              driver_name: ticket.driver_name,
+              count: 0,
+              total: 0
+            };
+          }
+          driverMap[ticket.driver_id].count++;
+          driverMap[ticket.driver_id].total += (ticket.driver_pay + ticket.bonus_pay);
+        });
+
+        const allDrivers = Object.values(driverMap);
+        
+        // Filter cards based on selection
+        if (driverId === 'all') {
+          displayDriverSummaryCards(allDrivers, null);
+        } else {
+          // Convert string to number for comparison
+          const driverIdNum = parseInt(driverId);
+          displayDriverSummaryCards(allDrivers, driverIdNum);
+        }
+
+        // Update current filter for history
+        window.currentDriverFilter = driverId === 'all' ? 'all' : parseInt(driverId);
+        loadPayrollHistory();
+
+      } catch (err) {
+        console.error('Error updating driver display:', err);
+      }
+    }
+
+    function showAllDrivers() {
+      document.getElementById('mainDriverFilter').value = 'all';
+      filterByDriver();
+    }
+
+    function filterPayrollHistory(driverId) {
+      // This will be called when loading history
+      window.currentDriverFilter = driverId;
+      loadPayrollHistory();
+    }
+
+    // Quick date preset functions
+    function setLastWeek() {
+      const today = new Date();
+      const lastMonday = new Date(today);
+      lastMonday.setDate(today.getDate() - today.getDay() - 6);
+      const lastSunday = new Date(lastMonday);
+      lastSunday.setDate(lastMonday.getDate() + 6);
+      
+      document.getElementById('payrollStartDate').value = lastMonday.toISOString().split('T')[0];
+      document.getElementById('payrollEndDate').value = lastSunday.toISOString().split('T')[0];
+    }
+
+    function setTwoWeeksAgo() {
       const today = new Date();
       const twoWeeksAgo = new Date(today);
       twoWeeksAgo.setDate(today.getDate() - 14);
       
-      // Find the Monday of that week
       const dayOfWeek = twoWeeksAgo.getDay();
       const daysToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
       const monday = new Date(twoWeeksAgo);
       monday.setDate(twoWeeksAgo.getDate() - daysToMonday);
       
-      // Find the Sunday
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       
-      const periodText = monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + 
-                        ' - ' + 
-                        sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      
-      document.getElementById('suggestedPeriod').textContent = periodText;
-      
-      // Store for quick use
-      window.suggestedStart = monday.toISOString().split('T')[0];
-      window.suggestedEnd = sunday.toISOString().split('T')[0];
+      document.getElementById('payrollStartDate').value = monday.toISOString().split('T')[0];
+      document.getElementById('payrollEndDate').value = sunday.toISOString().split('T')[0];
     }
 
-    function useSuggestedDates() {
-      document.getElementById('payrollStartDate').value = window.suggestedStart;
-      document.getElementById('payrollEndDate').value = window.suggestedEnd;
+    function setThisMonth() {
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      
+      document.getElementById('payrollStartDate').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('payrollEndDate').value = lastDay.toISOString().split('T')[0];
     }
 
+    // Generate payroll for specific driver (from unpaid summary)
     async function generatePayroll() {
+      const driverFilterStr = document.getElementById('mainDriverFilter').value;
       const startDate = document.getElementById('payrollStartDate').value;
       const endDate = document.getElementById('payrollEndDate').value;
 
@@ -3218,20 +3487,27 @@
         return;
       }
 
+      if (driverFilterStr === 'all') {
+        alert('Please select a specific driver first');
+        return;
+      }
+
+      const driverFilter = parseInt(driverFilterStr);
+
       try {
-        // Fetch UNPAID tickets for date range
         const { data: tickets, error } = await supabaseClient
           .from('tickets')
           .select('*')
           .gte('ticket_date', startDate)
           .lte('ticket_date', endDate)
           .eq('paid', false)
-          .order('driver_name', { ascending: true });
+          .eq('driver_id', driverFilter)
+          .order('ticket_date', { ascending: true });
 
         if (error) throw error;
 
         if (!tickets || tickets.length === 0) {
-          alert('No unpaid tickets found for this date range');
+          alert('No unpaid tickets found for this selection');
           return;
         }
 
@@ -3243,7 +3519,7 @@
               driver_id: ticket.driver_id,
               driver_name: ticket.driver_name,
               tickets: [],
-              loads: 0,
+              ticket_count: 0,
               base_pay: 0,
               bonus_pay: 0,
               total_pay: 0,
@@ -3252,7 +3528,7 @@
           }
           
           driverMap[ticket.driver_id].tickets.push(ticket);
-          driverMap[ticket.driver_id].loads++;
+          driverMap[ticket.driver_id].ticket_count++;
           driverMap[ticket.driver_id].base_pay += ticket.driver_pay;
           driverMap[ticket.driver_id].bonus_pay += ticket.bonus_pay;
           driverMap[ticket.driver_id].total_pay += (ticket.driver_pay + ticket.bonus_pay);
@@ -3277,7 +3553,7 @@
       const endFormatted = new Date(endDate + 'T00:00:00').toLocaleDateString();
       document.getElementById('payrollPeriodDisplay').textContent = `${startFormatted} - ${endFormatted}`;
 
-      let totalLoads = 0;
+      let totalTickets = 0;
       let totalBase = 0;
       let totalBonus = 0;
       let totalPay = 0;
@@ -3288,8 +3564,8 @@
           <td style="text-align: center;">
             <input type="checkbox" ${driver.selected ? 'checked' : ''} onchange="toggleDriverPayment(${index}, this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
           </td>
-          <td>${driver.driver_name}</td>
-          <td style="text-align: center;">${driver.loads}</td>
+          <td style="font-weight: 600;">${driver.driver_name}</td>
+          <td style="text-align: center;">${driver.ticket_count}</td>
           <td style="text-align: right;">$${driver.base_pay.toFixed(2)}</td>
           <td style="text-align: right;">$${driver.bonus_pay.toFixed(2)}</td>
           <td style="text-align: right; font-weight: 600;">$${driver.total_pay.toFixed(2)}</td>
@@ -3299,41 +3575,132 @@
         `;
 
         if (driver.selected) {
-          totalLoads += driver.loads;
+          totalTickets += driver.ticket_count;
           totalBase += driver.base_pay;
           totalBonus += driver.bonus_pay;
           totalPay += driver.total_pay;
         }
       });
 
-      document.getElementById('payrollTotalLoads').textContent = totalLoads;
+      document.getElementById('payrollTotalTickets').textContent = totalTickets;
       document.getElementById('payrollTotalBase').textContent = '$' + totalBase.toFixed(2);
       document.getElementById('payrollTotalBonus').textContent = '$' + totalBonus.toFixed(2);
       document.getElementById('payrollGrandTotal').textContent = '$' + totalPay.toFixed(2);
 
+      // Populate individual tickets list
+      populateIndividualTickets();
+
       document.getElementById('payrollPreviewArea').style.display = 'block';
-      document.getElementById('payrollPreviewArea').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function populateIndividualTickets() {
+      const tbody = document.getElementById('individualTicketsBody');
+      tbody.innerHTML = '';
+
+      // Flatten all tickets from all drivers in currentPayrollData
+      const allTickets = currentPayrollData.flatMap(driver => driver.tickets);
+
+      allTickets.forEach((ticket, index) => {
+        const ticketDate = new Date(ticket.ticket_date + 'T00:00:00').toLocaleDateString();
+        const basePay = ticket.driver_pay;
+        const bonusPay = ticket.bonus_pay;
+        const totalPay = basePay + bonusPay;
+
+        const row = tbody.insertRow();
+        row.id = `ticket-row-${ticket.id}`;
+        row.innerHTML = `
+          <td>${ticketDate}</td>
+          <td>${ticket.ticket_number}</td>
+          <td>${ticket.truck_number}</td>
+          <td style="text-align: right;">${ticket.net_tons.toFixed(2)}</td>
+          <td style="text-align: right;">$${basePay.toFixed(2)}</td>
+          <td style="text-align: right;">${bonusPay > 0 ? '$' + bonusPay.toFixed(2) : '-'}</td>
+          <td style="text-align: right; font-weight: 600;">$${totalPay.toFixed(2)}</td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn btn-secondary" onclick="editTicketInPayroll('${ticket.id}')" style="padding: 4px 8px; font-size: 11px; background: #dbeafe; border-color: #bfdbfe; color: #1e40af;">Edit</button>
+              <button class="btn btn-secondary" onclick="removeTicketFromPayroll('${ticket.id}')" style="padding: 4px 8px; font-size: 11px; background: #fee2e2; border-color: #fecaca; color: #991b1b;">Remove</button>
+            </div>
+          </td>
+        `;
+      });
+    }
+
+    function toggleTicketList() {
+      const list = document.getElementById('individualTicketsList');
+      const btnText = document.getElementById('ticketListBtnText');
+      
+      if (list.style.display === 'none') {
+        list.style.display = 'block';
+        btnText.textContent = '▲ Hide Individual Tickets';
+      } else {
+        list.style.display = 'none';
+        btnText.textContent = '▼ View & Edit Individual Tickets';
+      }
+    }
+
+    function editTicketInPayroll(ticketId) {
+      // Find the ticket in currentPayrollData
+      let ticketToEdit = null;
+      for (const driver of currentPayrollData) {
+        ticketToEdit = driver.tickets.find(t => t.id === ticketId);
+        if (ticketToEdit) break;
+      }
+
+      if (!ticketToEdit) return;
+
+      // Open the existing edit ticket modal
+      openEditTicketModal(ticketToEdit);
+    }
+
+    function removeTicketFromPayroll(ticketId) {
+      if (!confirm('Remove this ticket from the payroll preview?\n\n(The ticket will remain unpaid and can be added to a future payroll)')) {
+        return;
+      }
+
+      // Remove from currentPayrollData
+      for (const driver of currentPayrollData) {
+        const ticketIndex = driver.tickets.findIndex(t => t.id === ticketId);
+        if (ticketIndex !== -1) {
+          const removedTicket = driver.tickets.splice(ticketIndex, 1)[0];
+          
+          // Update driver totals
+          driver.ticket_count--;
+          driver.base_pay -= removedTicket.driver_pay;
+          driver.bonus_pay -= removedTicket.bonus_pay;
+          driver.total_pay -= (removedTicket.driver_pay + removedTicket.bonus_pay);
+          
+          break;
+        }
+      }
+
+      // Refresh the display
+      const startDate = document.getElementById('payrollStartDate').value;
+      const endDate = document.getElementById('payrollEndDate').value;
+      displayPayrollPreview(startDate, endDate);
+
+      alert('Ticket removed from this payroll preview');
     }
 
     function toggleDriverPayment(index, checked) {
       currentPayrollData[index].selected = checked;
       
       // Recalculate totals
-      let totalLoads = 0;
+      let totalTickets = 0;
       let totalBase = 0;
       let totalBonus = 0;
       let totalPay = 0;
 
       currentPayrollData.forEach(driver => {
         if (driver.selected) {
-          totalLoads += driver.loads;
+          totalTickets += driver.ticket_count;
           totalBase += driver.base_pay;
           totalBonus += driver.bonus_pay;
           totalPay += driver.total_pay;
         }
       });
 
-      document.getElementById('payrollTotalLoads').textContent = totalLoads;
+      document.getElementById('payrollTotalTickets').textContent = totalTickets;
       document.getElementById('payrollTotalBase').textContent = '$' + totalBase.toFixed(2);
       document.getElementById('payrollTotalBonus').textContent = '$' + totalBonus.toFixed(2);
       document.getElementById('payrollGrandTotal').textContent = '$' + totalPay.toFixed(2);
@@ -3341,20 +3708,50 @@
 
     function viewDriverTickets(index) {
       const driver = currentPayrollData[index];
-      let ticketList = `TICKET BREAKDOWN - ${driver.driver_name}\n\n`;
-      ticketList += `Ticket #      Date          Truck      Net Tons    Pay\n`;
-      ticketList += `${'─'.repeat(60)}\n`;
+      const tbody = document.getElementById('ticketDetailsBody');
+      tbody.innerHTML = '';
+
+      document.getElementById('ticketDetailsTitle').textContent = `${driver.driver_name} - Ticket Details`;
+
+      let totalBase = 0;
+      let totalBonus = 0;
+      let totalPay = 0;
 
       driver.tickets.forEach(ticket => {
         const date = new Date(ticket.ticket_date + 'T00:00:00').toLocaleDateString();
-        const pay = ticket.driver_pay + ticket.bonus_pay;
-        const bonus = ticket.bonus_pay > 0 ? ' + $10 (3rd)' : '';
-        ticketList += `${ticket.ticket_number.padEnd(12)} ${date.padEnd(12)} ${ticket.truck_number.padEnd(10)} ${ticket.net_tons.toFixed(2).padEnd(10)} $${pay.toFixed(2)}${bonus}\n`;
+        const basePay = ticket.driver_pay;
+        const bonusPay = ticket.bonus_pay;
+        const total = basePay + bonusPay;
+
+        totalBase += basePay;
+        totalBonus += bonusPay;
+        totalPay += total;
+
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td>${date}</td>
+          <td>${ticket.ticket_number}</td>
+          <td>${ticket.truck_number}</td>
+          <td style="text-align: right;">${ticket.net_tons.toFixed(2)}</td>
+          <td style="text-align: right;">$${basePay.toFixed(2)}</td>
+          <td style="text-align: right;">${bonusPay > 0 ? '$' + bonusPay.toFixed(2) : '-'}</td>
+          <td style="text-align: right; font-weight: 600;">$${total.toFixed(2)}</td>
+        `;
       });
 
-      ticketList += `\nTotal: ${driver.loads} loads = $${driver.total_pay.toFixed(2)}`;
+      document.getElementById('detailsBasePay').textContent = '$' + totalBase.toFixed(2);
+      document.getElementById('detailsBonusPay').textContent = '$' + totalBonus.toFixed(2);
+      document.getElementById('detailsTotalPay').textContent = '$' + totalPay.toFixed(2);
 
-      alert(ticketList);
+      document.getElementById('payrollTicketDetailsModal').classList.add('active');
+    }
+
+    function closeTicketDetailsModal() {
+      document.getElementById('payrollTicketDetailsModal').classList.remove('active');
+    }
+
+    function printTicketDetails() {
+      window.print();
     }
 
     async function savePayroll() {
@@ -3370,64 +3767,66 @@
       const notes = document.getElementById('payrollNotes').value;
 
       const totalAmount = selectedDrivers.reduce((sum, d) => sum + d.total_pay, 0);
+      const totalTickets = selectedDrivers.reduce((sum, d) => sum + d.ticket_count, 0);
 
-      if (!confirm(`Mark ${selectedDrivers.length} driver(s) as paid for $${totalAmount.toFixed(2)}?\n\nThis will mark all their tickets in this period as PAID.`)) {
+      const driverNames = selectedDrivers.map(d => d.driver_name).join(', ');
+
+      if (!confirm(`Mark payroll as paid?\n\n${selectedDrivers.length} driver(s): ${driverNames}\n${totalTickets} tickets = $${totalAmount.toFixed(2)}\n\nThis will mark all their tickets in this period as PAID.`)) {
         return;
       }
 
       try {
-        // Create payroll record
-        const { data: payrollRecord, error: payrollError } = await supabaseClient
-          .from('payroll_records')
-          .insert({
-            period_start: startDate,
-            period_end: endDate,
-            total_amount: totalAmount,
-            notes: notes || null
-          })
-          .select()
-          .single();
+        // Create separate payroll record for each driver
+        for (const driver of selectedDrivers) {
+          // Create payroll record
+          const { data: payrollRecord, error: payrollError } = await supabaseClient
+            .from('payroll_records')
+            .insert({
+              period_start: startDate,
+              period_end: endDate,
+              total_amount: driver.total_pay,
+              notes: notes || null
+            })
+            .select()
+            .single();
 
-        if (payrollError) throw payrollError;
+          if (payrollError) throw payrollError;
 
-        // Create payroll items for each driver
-        const payrollItems = selectedDrivers.map(driver => ({
-          payroll_id: payrollRecord.id,
-          driver_id: driver.driver_id,
-          driver_name: driver.driver_name,
-          ticket_count: driver.loads,
-          base_pay: driver.base_pay,
-          bonus_pay: driver.bonus_pay,
-          total_pay: driver.total_pay
-        }));
+          // Create payroll item
+          const { error: itemError } = await supabaseClient
+            .from('payroll_items')
+            .insert({
+              payroll_id: payrollRecord.id,
+              driver_id: driver.driver_id,
+              driver_name: driver.driver_name,
+              ticket_count: driver.ticket_count,
+              base_pay: driver.base_pay,
+              bonus_pay: driver.bonus_pay,
+              total_pay: driver.total_pay
+            });
 
-        const { error: itemsError } = await supabaseClient
-          .from('payroll_items')
-          .insert(payrollItems);
+          if (itemError) throw itemError;
 
-        if (itemsError) throw itemsError;
+          // Mark tickets as paid
+          const ticketIds = driver.tickets.map(t => t.id);
+          const { error: updateError } = await supabaseClient
+            .from('tickets')
+            .update({ 
+              paid: true,
+              payroll_id: payrollRecord.id
+            })
+            .in('id', ticketIds);
 
-        // Mark all tickets as paid
-        const allTicketIds = selectedDrivers.flatMap(d => d.tickets.map(t => t.id));
-
-        const { error: updateError } = await supabaseClient
-          .from('tickets')
-          .update({ 
-            paid: true,
-            payroll_id: payrollRecord.id
-          })
-          .in('id', allTicketIds);
-
-        if (updateError) throw updateError;
+          if (updateError) throw updateError;
+        }
 
         alert('Payroll saved successfully!');
         
-        // Clear form
+        // Clear and reload
         cancelPayroll();
-        
-        // Reload data
         await loadAllData();
         loadPayrollHistory();
+        loadUnpaidSummary();
 
       } catch (err) {
         console.error('Error saving payroll:', err);
@@ -3440,43 +3839,63 @@
       document.getElementById('payrollStartDate').value = '';
       document.getElementById('payrollEndDate').value = '';
       document.getElementById('payrollNotes').value = '';
+      document.getElementById('payrollDriverFilter').value = 'all';
       currentPayrollData = [];
     }
 
     async function loadPayrollHistory() {
       try {
-        const { data: payrolls, error } = await supabaseClient
-          .from('payroll_records')
+        let query = supabaseClient
+          .from('payroll_items')
           .select(`
             *,
-            payroll_items(count)
+            payroll_records (*)
           `)
           .order('created_at', { ascending: false });
+
+        // Filter by driver if currentDriverFilter is set
+        if (window.currentDriverFilter && window.currentDriverFilter !== 'all') {
+          query = query.eq('driver_id', window.currentDriverFilter);
+        }
+
+        const { data: items, error } = await query;
 
         if (error) throw error;
 
         const tbody = document.getElementById('payrollHistoryTable');
         tbody.innerHTML = '';
 
-        if (!payrolls || payrolls.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">No payroll records yet</td></tr>';
+        if (!items || items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">No payroll records yet</td></tr>';
+          document.getElementById('payrollHistorySummary').textContent = '';
           return;
         }
 
-        payrolls.forEach(payroll => {
+        // Calculate summary
+        const totalPaid = items.reduce((sum, item) => sum + item.total_pay, 0);
+        const totalTickets = items.reduce((sum, item) => sum + item.ticket_count, 0);
+        document.getElementById('payrollHistorySummary').textContent = 
+          `Total: $${totalPaid.toLocaleString()} (${totalTickets} tickets)`;
+
+        items.forEach(item => {
+          const record = item.payroll_records;
           const row = tbody.insertRow();
-          const startDate = new Date(payroll.period_start + 'T00:00:00').toLocaleDateString();
-          const endDate = new Date(payroll.period_end + 'T00:00:00').toLocaleDateString();
-          const paidDate = new Date(payroll.paid_date + 'T00:00:00').toLocaleDateString();
-          const driverCount = payroll.payroll_items?.[0]?.count || 0;
+          const startDate = new Date(record.period_start + 'T00:00:00').toLocaleDateString();
+          const endDate = new Date(record.period_end + 'T00:00:00').toLocaleDateString();
+          const paidDate = new Date(record.paid_date + 'T00:00:00').toLocaleDateString();
 
           row.innerHTML = `
             <td>${startDate} - ${endDate}</td>
+            <td style="font-weight: 600;">${item.driver_name}</td>
             <td>${paidDate}</td>
-            <td style="text-align: center;">${driverCount}</td>
-            <td style="text-align: right; font-weight: 600;">$${payroll.total_amount.toFixed(2)}</td>
+            <td style="text-align: center;">${item.ticket_count}</td>
+            <td style="text-align: right; font-weight: 600;">$${item.total_pay.toFixed(2)}</td>
             <td style="text-align: center;">
-              <button class="btn btn-secondary" onclick="viewPayrollPDF('${payroll.id}')" style="padding: 6px 12px; font-size: 12px;">📄 PDF</button>
+              <div style="display: flex; gap: 6px; justify-content: center;">
+                <button class="btn btn-secondary" onclick="viewPayrollPDF('${record.id}', '${item.driver_name}')" style="padding: 6px 10px; font-size: 11px;" title="View PDF">📄</button>
+                <button class="btn btn-secondary" onclick="unpayPayroll('${record.id}', '${item.driver_name}', ${item.ticket_count})" style="padding: 6px 10px; font-size: 11px; background: #fef3c7; border-color: #fde68a; color: #92400e;" title="Reverse/Unpay">🔄</button>
+                <button class="btn btn-secondary" onclick="deletePayroll('${record.id}', '${item.driver_name}')" style="padding: 6px 10px; font-size: 11px; background: #fee2e2; border-color: #fecaca; color: #991b1b;" title="Delete">🗑</button>
+              </div>
             </td>
           `;
         });
@@ -3486,8 +3905,67 @@
       }
     }
 
-    async function viewPayrollPDF(payrollId) {
-      alert('PDF generation for payroll coming in next update! For now, you can export from the preview.');
+    async function viewPayrollPDF(payrollId, driverName) {
+      alert('PDF generation coming soon! For now, view ticket details from the preview screen.');
+    }
+
+    async function unpayPayroll(payrollId, driverName, ticketCount) {
+      if (!confirm(`Reverse payroll for ${driverName}?\n\nThis will mark ${ticketCount} ticket(s) as UNPAID again and delete this payroll record.`)) {
+        return;
+      }
+
+      try {
+        // Mark tickets as unpaid
+        const { error: unpayError } = await supabaseClient
+          .from('tickets')
+          .update({ 
+            paid: false,
+            payroll_id: null
+          })
+          .eq('payroll_id', payrollId);
+
+        if (unpayError) throw unpayError;
+
+        // Delete payroll record (cascade deletes payroll_items)
+        const { error: deleteError } = await supabaseClient
+          .from('payroll_records')
+          .delete()
+          .eq('id', payrollId);
+
+        if (deleteError) throw deleteError;
+
+        alert('Payroll reversed successfully!');
+        
+        loadPayrollHistory();
+        loadUnpaidSummary();
+        await loadAllData();
+
+      } catch (err) {
+        console.error('Error reversing payroll:', err);
+        alert('Error reversing payroll: ' + err.message);
+      }
+    }
+
+    async function deletePayroll(payrollId, driverName) {
+      if (!confirm(`DELETE payroll record for ${driverName}?\n\nWARNING: The tickets will remain marked as PAID. Use "Reverse" instead if you want to unpay them.\n\nAre you sure?`)) {
+        return;
+      }
+
+      try {
+        const { error } = await supabaseClient
+          .from('payroll_records')
+          .delete()
+          .eq('id', payrollId);
+
+        if (error) throw error;
+
+        alert('Payroll record deleted!');
+        loadPayrollHistory();
+
+      } catch (err) {
+        console.error('Error deleting payroll:', err);
+        alert('Error deleting payroll: ' + err.message);
+      }
     }
 
     function logout() {
